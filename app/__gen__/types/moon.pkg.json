@@ -1,0 +1,12 @@
+{
+  "supported-targets": ["js"],
+  "import": [
+    { "path": "mizchi/luna/luna", "alias": "luna" }
+  ],
+  "link": {
+    "js": {
+      "format": "esm"
+    }
+  },
+  "warn-list": "-29"
+}

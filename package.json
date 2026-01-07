@@ -1,0 +1,38 @@
+{
+  "name": "fitbit-private-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate": "sol generate && node scripts/patch-types.js",
+    "build:moon": "moon build --target js",
+    "build:patch": "node scripts/patch-for-cloudflare.js target/js/release/build/__gen__/server/server.js",
+    "build:client": "node scripts/bundle-client.js",
+    "build": "npm run generate && npm run build:moon && npm run build:patch && npm run build:client",
+    "dev": "npm run build && wrangler dev --port 18787",
+    "deploy": "npm run build && wrangler deploy",
+    "db:create": "wrangler d1 create fitbit-health-db",
+    "db:init": "wrangler d1 execute fitbit-health-db --local --file=migrations/0001_create_tables.sql",
+    "db:migrate": "wrangler d1 migrations apply fitbit-health-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply fitbit-health-db",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:mcp": "npx playwright test mcp.spec.ts",
+    "test:dashboard": "npx playwright test dashboard.spec.ts",
+    "test:oauth": "npx playwright test oauth.spec.ts --headed"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.7",
+    "hono": "^4.11.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "@cloudflare/workers-types": "^4.20260103.0",
+    "@luna_ui/sol": "^0.4.0",
+    "@playwright/test": "^1.57.0",
+    "axe-core": "^4.11.0",
+    "dotenv": "^17.2.3",
+    "esbuild": "^0.27.2",
+    "wrangler": "^4.56.0"
+  }
+}

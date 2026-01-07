@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fitbit-private-mcp.kazu-san.workers.dev/sitemap.xml

@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.mooncakes/
+
+# Build outputs
+target/
+.sol/
+static/*.js
+static/*.js.map
+!static/loader.js
+
+# Environment
+.env
+.dev.vars
+
+# Wrangler
+.wrangler/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.artifacts/
+test-results/
+playwright-report/
+*.report.html

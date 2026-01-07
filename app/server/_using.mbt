@@ -1,0 +1,26 @@
+///|
+/// Server-side element DSL imports
+using @element {
+  a,
+  article,
+  button,
+  div,
+  footer_ as footer,
+  form,
+  h1,
+  h2,
+  h3,
+  h4,
+  header_ as header,
+  input,
+  label,
+  li,
+  main_ as main,
+  nav,
+  p,
+  section,
+  span,
+  strong,
+  text,
+  ul,
+}

@@ -1,0 +1,105 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kazuph/fitbit_health/server"
+
+import(
+  "mizchi/js/core"
+  "mizchi/luna/luna"
+  "mizchi/luna/sol/action"
+  "mizchi/luna/sol/router"
+)
+
+// Values
+pub fn action_registry() -> @action.ActionRegistry
+
+pub fn array_get(@core.Any, Int) -> @core.Any
+
+pub fn array_len(@core.Any) -> Int
+
+pub fn build_mcp_response(Bool, @core.Any, Int, String) -> @core.Any
+
+pub fn build_tools_response() -> @core.Any
+
+pub fn config() -> @router.RouterConfig
+
+pub fn db_get_daily_summaries(Int) -> @core.Promise[@core.Any]
+
+pub fn db_get_latest_activity() -> @core.Promise[@core.Any]
+
+pub fn db_get_latest_heartrate() -> @core.Promise[@core.Any]
+
+pub fn db_get_latest_sleep() -> @core.Promise[@core.Any]
+
+pub fn db_get_latest_weight() -> @core.Promise[@core.Any]
+
+pub fn db_get_oauth_token(String) -> @core.Promise[@core.Any]
+
+pub fn db_get_today_summary() -> @core.Promise[@core.Any]
+
+pub fn db_get_token_status() -> @core.Promise[@core.Any]
+
+pub fn db_is_authenticated() -> @core.Promise[Bool]
+
+pub fn format_date(String) -> String
+
+pub fn format_float(Double, Int) -> String
+
+pub fn format_number(Int) -> String
+
+pub fn get_bool(@core.Any, String) -> Bool
+
+pub fn get_float(@core.Any, String) -> Double
+
+pub fn get_int(@core.Any, String) -> Int
+
+pub fn get_str(@core.Any, String) -> String
+
+pub fn get_timestamp() -> String
+
+pub fn get_today_date() -> String
+
+pub fn is_null(@core.Any) -> Bool
+
+pub fn is_today(String) -> Bool
+
+pub async fn mcp_activity_handler(@router.PageProps) -> @core.Any
+
+pub fn mcp_get_activity(Int) -> @core.Promise[@core.Any]
+
+pub fn mcp_get_health_summaries(Int) -> @core.Promise[@core.Any]
+
+pub fn mcp_get_heartrate(Int) -> @core.Promise[@core.Any]
+
+pub fn mcp_get_sleep(Int) -> @core.Promise[@core.Any]
+
+pub fn mcp_get_weight(Int) -> @core.Promise[@core.Any]
+
+pub async fn mcp_health_handler(@router.PageProps) -> @core.Any
+
+pub async fn mcp_heartrate_handler(@router.PageProps) -> @core.Any
+
+pub fn mcp_routes() -> Array[@router.SolRoutes]
+
+pub async fn mcp_sleep_handler(@router.PageProps) -> @core.Any
+
+pub async fn mcp_tools_handler(@router.PageProps) -> @core.Any
+
+pub async fn mcp_weight_handler(@router.PageProps) -> @core.Any
+
+pub fn parse_days_param(@router.PageProps, Int) -> Int
+
+pub fn progress_bar(Int, Int, id? : String, class? : String, style? : String) -> @luna.Node[Unit]
+
+pub fn routes() -> Array[@router.SolRoutes]
+
+pub fn time(datetime? : String, id? : String, class? : String, style? : String, attrs? : Array[(String, @luna.Attr[Unit])], Array[@luna.Node[Unit]]) -> @luna.Node[Unit]
+
+pub fn truncate_str(String, Int) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
