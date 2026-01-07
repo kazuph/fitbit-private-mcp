@@ -27,6 +27,8 @@ pub fn routes() -> Array[@router.SolRoutes] {
   ]
   // MCP API routes (auth handled at Hono level in worker.ts)
   let api_routes = mcp_routes()
+  // Note: OAuth and Sync routes are handled in worker.ts but use MoonBit helpers
+  // from oauth.mbt and sync.mbt for the business logic
   // Combine all routes
   let all_routes : Array[@router.SolRoutes] = []
   for r in dashboard_routes {

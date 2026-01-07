@@ -15,7 +15,13 @@ pub fn array_get(@core.Any, Int) -> @core.Any
 
 pub fn array_len(@core.Any) -> Int
 
+pub fn build_fitbit_auth_url() -> String
+
 pub fn build_mcp_response(Bool, @core.Any, Int, String) -> @core.Any
+
+pub fn build_sync_error(String) -> @core.Any
+
+pub fn build_sync_response(Bool, String, String) -> @core.Any
 
 pub fn build_tools_response() -> @core.Any
 
@@ -39,17 +45,37 @@ pub fn db_get_token_status() -> @core.Promise[@core.Any]
 
 pub fn db_is_authenticated() -> @core.Promise[Bool]
 
+pub fn exchange_code_for_tokens(String) -> @core.Promise[@core.Any]
+
+pub fn fetch_fitbit_activity(String, String) -> @core.Promise[@core.Any]
+
+pub fn fetch_fitbit_heartrate(String, String) -> @core.Promise[@core.Any]
+
+pub fn fetch_fitbit_sleep(String, String) -> @core.Promise[@core.Any]
+
+pub fn fetch_fitbit_weight(String, String) -> @core.Promise[@core.Any]
+
 pub fn format_date(String) -> String
 
 pub fn format_float(Double, Int) -> String
 
 pub fn format_number(Int) -> String
 
+pub fn get_access_token(@core.Any) -> String
+
 pub fn get_bool(@core.Any, String) -> Bool
+
+pub fn get_env(String) -> String
+
+pub fn get_expires_at(@core.Any) -> String
 
 pub fn get_float(@core.Any, String) -> Double
 
 pub fn get_int(@core.Any, String) -> Int
+
+pub fn get_refresh_token(@core.Any) -> String
+
+pub fn get_stored_tokens() -> @core.Promise[@core.Any]
 
 pub fn get_str(@core.Any, String) -> String
 
@@ -57,9 +83,15 @@ pub fn get_timestamp() -> String
 
 pub fn get_today_date() -> String
 
+pub fn get_token_field_int(@core.Any, String) -> Int
+
+pub fn get_token_field_string(@core.Any, String) -> String
+
 pub fn is_null(@core.Any) -> Bool
 
 pub fn is_today(String) -> Bool
+
+pub fn is_token_expired(String) -> Bool
 
 pub async fn mcp_activity_handler(@router.PageProps) -> @core.Any
 
@@ -87,13 +119,31 @@ pub async fn mcp_weight_handler(@router.PageProps) -> @core.Any
 
 pub fn parse_days_param(@router.PageProps, Int) -> Int
 
+pub fn process_token_response(@core.Any) -> @core.Any
+
 pub fn progress_bar(Int, Int, id? : String, class? : String, style? : String) -> @luna.Node[Unit]
 
+pub fn refresh_oauth_tokens(String) -> @core.Promise[@core.Any]
+
 pub fn routes() -> Array[@router.SolRoutes]
+
+pub fn store_activity_data(String, @core.Any) -> @core.Promise[Bool]
+
+pub fn store_heartrate_data(String, @core.Any) -> @core.Promise[Bool]
+
+pub fn store_oauth_tokens(String, String, Int, String) -> @core.Promise[Bool]
+
+pub fn store_sleep_data(String, @core.Any) -> @core.Promise[Bool]
+
+pub fn store_weight_data(@core.Any) -> @core.Promise[Bool]
 
 pub fn time(datetime? : String, id? : String, class? : String, style? : String, attrs? : Array[(String, @luna.Attr[Unit])], Array[@luna.Node[Unit]]) -> @luna.Node[Unit]
 
 pub fn truncate_str(String, Int) -> String
+
+pub fn update_daily_summary(String) -> @core.Promise[Bool]
+
+pub fn update_tokens(String, String, Int) -> @core.Promise[Bool]
 
 // Errors
 
