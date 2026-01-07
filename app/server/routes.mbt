@@ -68,18 +68,18 @@ fn root_layout(
 ///| Main dashboard page with health metrics
 async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
   @server_dom.ServerNode::async_(async fn() {
-    let token_status = db_get_token_status().wait()
+    let token_status = db_get_token_status()
     let is_connected = get_bool(token_status, "connected")
 
     if not(is_connected) {
       return render_empty_state()
     }
 
-    let activity = db_get_latest_activity().wait()
-    let sleep = db_get_latest_sleep().wait()
-    let heartrate = db_get_latest_heartrate().wait()
-    let weight = db_get_latest_weight().wait()
-    let summaries = db_get_daily_summaries(7).wait()
+    let activity = db_get_latest_activity()
+    let sleep = db_get_latest_sleep()
+    let heartrate = db_get_latest_heartrate()
+    let weight = db_get_latest_weight()
+    let summaries = db_get_daily_summaries(7)
 
     let last_sync = get_str(token_status, "lastSync")
     let sync_text = if last_sync != "" { format_date(last_sync) } else { "Never" }

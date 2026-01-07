@@ -21,23 +21,23 @@ pub fn build_tools_response() -> @core.Any
 
 pub fn config() -> @router.RouterConfig
 
-pub fn db_get_daily_summaries(Int) -> @core.Promise[@core.Any]
+pub async fn db_get_daily_summaries(Int) -> @core.Any
 
-pub fn db_get_latest_activity() -> @core.Promise[@core.Any]
+pub async fn db_get_latest_activity() -> @core.Any
 
-pub fn db_get_latest_heartrate() -> @core.Promise[@core.Any]
+pub async fn db_get_latest_heartrate() -> @core.Any
 
-pub fn db_get_latest_sleep() -> @core.Promise[@core.Any]
+pub async fn db_get_latest_sleep() -> @core.Any
 
-pub fn db_get_latest_weight() -> @core.Promise[@core.Any]
+pub async fn db_get_latest_weight() -> @core.Any
 
-pub fn db_get_oauth_token(String) -> @core.Promise[@core.Any]
+pub async fn db_get_oauth_token(String) -> @core.Any
 
-pub fn db_get_today_summary() -> @core.Promise[@core.Any]
+pub async fn db_get_today_summary() -> @core.Any
 
-pub fn db_get_token_status() -> @core.Promise[@core.Any]
+pub async fn db_get_token_status() -> @core.Any
 
-pub fn db_is_authenticated() -> @core.Promise[Bool]
+pub async fn db_is_authenticated() -> Bool
 
 pub fn format_date(String) -> String
 
@@ -63,15 +63,15 @@ pub fn is_today(String) -> Bool
 
 pub async fn mcp_activity_handler(@router.PageProps) -> @core.Any
 
-pub fn mcp_get_activity(Int) -> @core.Promise[@core.Any]
+pub async fn mcp_get_activity(Int) -> @core.Any
 
-pub fn mcp_get_health_summaries(Int) -> @core.Promise[@core.Any]
+pub async fn mcp_get_health_summaries(Int) -> @core.Any
 
-pub fn mcp_get_heartrate(Int) -> @core.Promise[@core.Any]
+pub async fn mcp_get_heartrate(Int) -> @core.Any
 
-pub fn mcp_get_sleep(Int) -> @core.Promise[@core.Any]
+pub async fn mcp_get_sleep(Int) -> @core.Any
 
-pub fn mcp_get_weight(Int) -> @core.Promise[@core.Any]
+pub async fn mcp_get_weight(Int) -> @core.Any
 
 pub async fn mcp_health_handler(@router.PageProps) -> @core.Any
 

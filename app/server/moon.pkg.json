@@ -9,6 +9,7 @@
     { "path": "mizchi/luna/luna/static_dom/element", "alias": "element" },
     { "path": "mizchi/js/core", "alias": "core" },
     { "path": "mizchi/js/builtins/global", "alias": "global" },
+    { "path": "mizchi/cloudflare", "alias": "cloudflare" },
     { "path": "kazuph/fitbit_health/__gen__/types", "alias": "types" }
   ],
   "warn-list": "-35"

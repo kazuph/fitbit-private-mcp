@@ -2,59 +2,64 @@
 ///| These endpoints provide Fitbit health data for MCP clients
 
 // =============================================================================
-// MCP Data Fetchers (D1 Database)
+// MCP Data Fetchers (Using mizchi/cloudflare D1 API)
 // =============================================================================
 
 ///| Get daily summaries for health endpoint
-pub extern "js" fn mcp_get_health_summaries(days : Int) -> @core.Promise[@core.Any] =
-  #| async (days) => {
-  #|   const db = globalThis.__D1_DB;
-  #|   if (!db) throw new Error('D1 database not initialized');
-  #|   const r = await db.prepare("SELECT * FROM daily_summary ORDER BY date DESC LIMIT ?").bind(days).all();
-  #|   return r.results;
-  #| }
+pub async fn mcp_get_health_summaries(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM daily_summary ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
 
 ///| Get activity data for MCP
-pub extern "js" fn mcp_get_activity(days : Int) -> @core.Promise[@core.Any] =
-  #| async (days) => {
-  #|   const db = globalThis.__D1_DB;
-  #|   if (!db) throw new Error('D1 database not initialized');
-  #|   const r = await db.prepare("SELECT * FROM daily_activity ORDER BY date DESC LIMIT ?").bind(days).all();
-  #|   return r.results;
-  #| }
+pub async fn mcp_get_activity(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM daily_activity ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
 
 ///| Get sleep data for MCP
-pub extern "js" fn mcp_get_sleep(days : Int) -> @core.Promise[@core.Any] =
-  #| async (days) => {
-  #|   const db = globalThis.__D1_DB;
-  #|   if (!db) throw new Error('D1 database not initialized');
-  #|   const r = await db.prepare("SELECT * FROM sleep_data ORDER BY date DESC LIMIT ?").bind(days).all();
-  #|   return r.results;
-  #| }
+pub async fn mcp_get_sleep(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM sleep_data ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
 
 ///| Get heart rate data for MCP
-pub extern "js" fn mcp_get_heartrate(days : Int) -> @core.Promise[@core.Any] =
-  #| async (days) => {
-  #|   const db = globalThis.__D1_DB;
-  #|   if (!db) throw new Error('D1 database not initialized');
-  #|   const r = await db.prepare("SELECT * FROM heart_rate ORDER BY date DESC LIMIT ?").bind(days).all();
-  #|   return r.results;
-  #| }
+pub async fn mcp_get_heartrate(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM heart_rate ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
 
 ///| Get weight data for MCP
-pub extern "js" fn mcp_get_weight(days : Int) -> @core.Promise[@core.Any] =
-  #| async (days) => {
-  #|   const db = globalThis.__D1_DB;
-  #|   if (!db) throw new Error('D1 database not initialized');
-  #|   const r = await db.prepare("SELECT * FROM weight_data ORDER BY date DESC LIMIT ?").bind(days).all();
-  #|   return r.results;
-  #| }
+pub async fn mcp_get_weight(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM weight_data ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
 
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
-///| Get today's date as YYYY-MM-DD
+///| Get today's date as YYYY-MM-DD - requires FFI for Date API
 pub extern "js" fn get_today_date() -> String =
   #| () => new Date().toISOString().split('T')[0]
 
@@ -71,75 +76,107 @@ pub fn parse_days_param(props : @router.PageProps, default_days : Int) -> Int {
   }
 }
 
-///| Build JSON response for MCP endpoints
-pub extern "js" fn build_mcp_response(
+///| Build JSON response for MCP endpoints - MoonBit native
+pub fn build_mcp_response(
   success : Bool,
   data : @core.Any,
   days : Int,
   end_date : String,
-) -> @core.Any =
-  #| (success, data, days, endDate) => ({
-  #|   success,
-  #|   data,
-  #|   period: { days, end_date: endDate }
-  #| })
+) -> @core.Any {
+  let period = @core.new_object()
+  period._set("days", @core.any(days))
+  period._set("end_date", @core.any(end_date))
 
-///| Build MCP tools list response
-pub extern "js" fn build_tools_response() -> @core.Any =
-  #| () => ({
-  #|   tools: [
-  #|     {
-  #|       name: 'get_health_summary',
-  #|       description: 'Get daily health summary including steps, calories, sleep, and heart rate',
-  #|       parameters: {
-  #|         type: 'object',
-  #|         properties: {
-  #|           days: { type: 'number', description: 'Number of days to retrieve (default: 7)' }
-  #|         }
-  #|       }
-  #|     },
-  #|     {
-  #|       name: 'get_activity_data',
-  #|       description: 'Get detailed activity data including steps, distance, and active minutes',
-  #|       parameters: {
-  #|         type: 'object',
-  #|         properties: {
-  #|           days: { type: 'number', description: 'Number of days to retrieve (default: 7)' }
-  #|         }
-  #|       }
-  #|     },
-  #|     {
-  #|       name: 'get_sleep_data',
-  #|       description: 'Get sleep data including duration, efficiency, and sleep stages',
-  #|       parameters: {
-  #|         type: 'object',
-  #|         properties: {
-  #|           days: { type: 'number', description: 'Number of days to retrieve (default: 7)' }
-  #|         }
-  #|       }
-  #|     },
-  #|     {
-  #|       name: 'get_heartrate_data',
-  #|       description: 'Get heart rate data including resting HR and zone minutes',
-  #|       parameters: {
-  #|         type: 'object',
-  #|         properties: {
-  #|           days: { type: 'number', description: 'Number of days to retrieve (default: 7)' }
-  #|         }
-  #|       }
-  #|     },
-  #|     {
-  #|       name: 'get_weight_data',
-  #|       description: 'Get weight and body composition data',
-  #|       parameters: {
-  #|         type: 'object',
-  #|         properties: {
-  #|           days: { type: 'number', description: 'Number of days to retrieve (default: 30)' }
-  #|         }
-  #|       }
-  #|     }
-  #|   ]
-  #| })
+  let result = @core.new_object()
+  result._set("success", @core.any(success))
+  result._set("data", data)
+  result._set("period", period)
+  result
+}
+
+///| Build MCP tools list response - MoonBit native
+pub fn build_tools_response() -> @core.Any {
+  let tools = @core.new_array()
+
+  // Tool 1: get_health_summary
+  let tool1 = @core.new_object()
+  tool1._set("name", @core.any("get_health_summary"))
+  tool1._set("description", @core.any("Get daily health summary including steps, calories, sleep, and heart rate"))
+  let params1 = @core.new_object()
+  params1._set("type", @core.any("object"))
+  let props1 = @core.new_object()
+  let days_prop = @core.new_object()
+  days_prop._set("type", @core.any("number"))
+  days_prop._set("description", @core.any("Number of days to retrieve (default: 7)"))
+  props1._set("days", days_prop)
+  params1._set("properties", props1)
+  tool1._set("parameters", params1)
+  @core.any(tools)._call("push", [tool1]) |> ignore
+
+  // Tool 2: get_activity_data
+  let tool2 = @core.new_object()
+  tool2._set("name", @core.any("get_activity_data"))
+  tool2._set("description", @core.any("Get detailed activity data including steps, distance, and active minutes"))
+  let params2 = @core.new_object()
+  params2._set("type", @core.any("object"))
+  let props2 = @core.new_object()
+  let days_prop2 = @core.new_object()
+  days_prop2._set("type", @core.any("number"))
+  days_prop2._set("description", @core.any("Number of days to retrieve (default: 7)"))
+  props2._set("days", days_prop2)
+  params2._set("properties", props2)
+  tool2._set("parameters", params2)
+  @core.any(tools)._call("push", [tool2]) |> ignore
+
+  // Tool 3: get_sleep_data
+  let tool3 = @core.new_object()
+  tool3._set("name", @core.any("get_sleep_data"))
+  tool3._set("description", @core.any("Get sleep data including duration, efficiency, and sleep stages"))
+  let params3 = @core.new_object()
+  params3._set("type", @core.any("object"))
+  let props3 = @core.new_object()
+  let days_prop3 = @core.new_object()
+  days_prop3._set("type", @core.any("number"))
+  days_prop3._set("description", @core.any("Number of days to retrieve (default: 7)"))
+  props3._set("days", days_prop3)
+  params3._set("properties", props3)
+  tool3._set("parameters", params3)
+  @core.any(tools)._call("push", [tool3]) |> ignore
+
+  // Tool 4: get_heartrate_data
+  let tool4 = @core.new_object()
+  tool4._set("name", @core.any("get_heartrate_data"))
+  tool4._set("description", @core.any("Get heart rate data including resting HR and zone minutes"))
+  let params4 = @core.new_object()
+  params4._set("type", @core.any("object"))
+  let props4 = @core.new_object()
+  let days_prop4 = @core.new_object()
+  days_prop4._set("type", @core.any("number"))
+  days_prop4._set("description", @core.any("Number of days to retrieve (default: 7)"))
+  props4._set("days", days_prop4)
+  params4._set("properties", props4)
+  tool4._set("parameters", params4)
+  @core.any(tools)._call("push", [tool4]) |> ignore
+
+  // Tool 5: get_weight_data
+  let tool5 = @core.new_object()
+  tool5._set("name", @core.any("get_weight_data"))
+  tool5._set("description", @core.any("Get weight and body composition data"))
+  let params5 = @core.new_object()
+  params5._set("type", @core.any("object"))
+  let props5 = @core.new_object()
+  let days_prop5 = @core.new_object()
+  days_prop5._set("type", @core.any("number"))
+  days_prop5._set("description", @core.any("Number of days to retrieve (default: 30)"))
+  props5._set("days", days_prop5)
+  params5._set("properties", props5)
+  tool5._set("parameters", params5)
+  @core.any(tools)._call("push", [tool5]) |> ignore
+
+  let result = @core.new_object()
+  result._set("tools", @core.any(tools))
+  result
+}
 
 // =============================================================================
 // MCP API Route Handlers
@@ -153,7 +190,7 @@ pub async fn mcp_tools_handler(_props : @router.PageProps) -> @core.Any {
 ///| GET /mcp/health - Get health summary data
 pub async fn mcp_health_handler(props : @router.PageProps) -> @core.Any {
   let days = parse_days_param(props, 7)
-  let summaries = mcp_get_health_summaries(days).wait()
+  let summaries = mcp_get_health_summaries(days)
   let end_date = get_today_date()
   build_mcp_response(true, summaries, days, end_date)
 }
@@ -161,7 +198,7 @@ pub async fn mcp_health_handler(props : @router.PageProps) -> @core.Any {
 ///| GET /mcp/activity - Get activity data
 pub async fn mcp_activity_handler(props : @router.PageProps) -> @core.Any {
   let days = parse_days_param(props, 7)
-  let activities = mcp_get_activity(days).wait()
+  let activities = mcp_get_activity(days)
   let end_date = get_today_date()
   build_mcp_response(true, activities, days, end_date)
 }
@@ -169,7 +206,7 @@ pub async fn mcp_activity_handler(props : @router.PageProps) -> @core.Any {
 ///| GET /mcp/sleep - Get sleep data
 pub async fn mcp_sleep_handler(props : @router.PageProps) -> @core.Any {
   let days = parse_days_param(props, 7)
-  let sleep_data = mcp_get_sleep(days).wait()
+  let sleep_data = mcp_get_sleep(days)
   let end_date = get_today_date()
   build_mcp_response(true, sleep_data, days, end_date)
 }
@@ -177,7 +214,7 @@ pub async fn mcp_sleep_handler(props : @router.PageProps) -> @core.Any {
 ///| GET /mcp/heartrate - Get heart rate data
 pub async fn mcp_heartrate_handler(props : @router.PageProps) -> @core.Any {
   let days = parse_days_param(props, 7)
-  let heart_rate_data = mcp_get_heartrate(days).wait()
+  let heart_rate_data = mcp_get_heartrate(days)
   let end_date = get_today_date()
   build_mcp_response(true, heart_rate_data, days, end_date)
 }
@@ -185,7 +222,7 @@ pub async fn mcp_heartrate_handler(props : @router.PageProps) -> @core.Any {
 ///| GET /mcp/weight - Get weight data
 pub async fn mcp_weight_handler(props : @router.PageProps) -> @core.Any {
   let days = parse_days_param(props, 30) // Default 30 days for weight
-  let weight_data = mcp_get_weight(days).wait()
+  let weight_data = mcp_get_weight(days)
   let end_date = get_today_date()
   build_mcp_response(true, weight_data, days, end_date)
 }

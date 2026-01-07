@@ -3,13 +3,20 @@
   "version": "0.1.0",
   "deps": {
     "mizchi/luna": "0.4.1",
-    "mizchi/js": "0.10.7"
+    "mizchi/js": "0.10.7",
+    "mizchi/cloudflare": "0.1.1"
   },
-  "source": "app",
-  "preferred-target": "js",
   "readme": "README.md",
   "repository": "",
   "license": "MIT",
-  "keywords": ["fitbit", "health", "luna-ui", "cloudflare-workers", "mcp"],
-  "description": "Private Fitbit health dashboard with MCP endpoint"
+  "keywords": [
+    "fitbit",
+    "health",
+    "luna-ui",
+    "cloudflare-workers",
+    "mcp"
+  ],
+  "description": "Private Fitbit health dashboard with MCP endpoint",
+  "source": "app",
+  "preferred-target": "js"
 }
