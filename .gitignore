@@ -6,6 +6,7 @@ node_modules/
 # Build outputs
 target/
 .sol/
+app/__gen__/
 static/*.js
 static/*.js.map
 !static/loader.js
