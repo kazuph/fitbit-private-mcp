@@ -21,7 +21,7 @@ if (!MCP_API_KEY) {
 }
 
 // Base URL from environment with fallback for local development
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8787';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:18787';
 
 test.describe('MCP Authentication', () => {
   test('should reject requests without API key', async () => {
@@ -129,11 +129,10 @@ test.describe('MCP Health Endpoint', () => {
     // Verify response structure
     expect(data.success).toBe(true);
     expect(data.data).toBeDefined();
-    expect(data.data.summaries).toBeDefined();
-    expect(Array.isArray(data.data.summaries)).toBe(true);
-    expect(data.data.period).toBeDefined();
-    expect(data.data.period.days).toBeDefined();
-    expect(data.data.period.end_date).toBeDefined();
+    expect(Array.isArray(data.data)).toBe(true);
+    expect(data.period).toBeDefined();
+    expect(data.period.days).toBeDefined();
+    expect(data.period.end_date).toBeDefined();
   });
 
   test('should accept days parameter', async () => {
@@ -145,7 +144,7 @@ test.describe('MCP Health Endpoint', () => {
 
     expect(response.ok).toBe(true);
     const data = await response.json();
-    expect(data.data.period.days).toBe(14);
+    expect(data.period.days).toBe(14);
   });
 
   test('should handle default days value', async () => {
@@ -156,7 +155,7 @@ test.describe('MCP Health Endpoint', () => {
     });
 
     const data = await response.json();
-    expect(data.data.period.days).toBe(7); // Default is 7 days
+    expect(data.period.days).toBe(7); // Default is 7 days
   });
 });
 
@@ -173,8 +172,7 @@ test.describe('MCP Activity Endpoint', () => {
 
     expect(data.success).toBe(true);
     expect(data.data).toBeDefined();
-    expect(data.data.activities).toBeDefined();
-    expect(Array.isArray(data.data.activities)).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
   });
 
   test('should return activity data for specified days', async () => {
@@ -186,7 +184,7 @@ test.describe('MCP Activity Endpoint', () => {
 
     expect(response.ok).toBe(true);
     const data = await response.json();
-    expect(data.data.period.days).toBe(30);
+    expect(data.period.days).toBe(30);
   });
 });
 
@@ -203,8 +201,7 @@ test.describe('MCP Sleep Endpoint', () => {
 
     expect(data.success).toBe(true);
     expect(data.data).toBeDefined();
-    expect(data.data.sleep_data).toBeDefined();
-    expect(Array.isArray(data.data.sleep_data)).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
   });
 });
 
@@ -221,8 +218,7 @@ test.describe('MCP Heart Rate Endpoint', () => {
 
     expect(data.success).toBe(true);
     expect(data.data).toBeDefined();
-    expect(data.data.heart_rate_data).toBeDefined();
-    expect(Array.isArray(data.data.heart_rate_data)).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
   });
 });
 
@@ -239,8 +235,7 @@ test.describe('MCP Weight Endpoint', () => {
 
     expect(data.success).toBe(true);
     expect(data.data).toBeDefined();
-    expect(data.data.weight_data).toBeDefined();
-    expect(Array.isArray(data.data.weight_data)).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
   });
 
   test('should use 30 days default for weight', async () => {
@@ -251,7 +246,7 @@ test.describe('MCP Weight Endpoint', () => {
     });
 
     const data = await response.json();
-    expect(data.data.period.days).toBe(30);
+    expect(data.period.days).toBe(30);
   });
 });
 
@@ -306,6 +301,6 @@ test.describe('MCP JSON Response Format', () => {
 
     const data = await response.json();
     // end_date should be in YYYY-MM-DD format
-    expect(data.data.period.end_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(data.period.end_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

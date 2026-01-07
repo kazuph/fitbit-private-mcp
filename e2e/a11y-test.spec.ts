@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import * as fs from 'fs';
 
 test.describe('A11y & UX Review', () => {
   test.use({
@@ -11,7 +12,7 @@ test.describe('A11y & UX Review', () => {
 
   test('Full accessibility scan with axe-core', async ({ page }) => {
     // Navigate to dashboard
-    await page.goto('http://localhost:8787/');
+    await page.goto('http://localhost:18787/');
     await page.waitForLoadState('networkidle');
 
     // Run axe accessibility scan
@@ -57,13 +58,12 @@ test.describe('A11y & UX Review', () => {
 
     // Save detailed report to file
     const reportPath = '/tmp/axe-report.json';
-    const fs = require('fs');
     fs.writeFileSync(reportPath, JSON.stringify(accessibilityScanResults, null, 2));
     console.log(`\nDetailed report saved to: ${reportPath}`);
   });
 
   test('Keyboard navigation and focus management', async ({ page }) => {
-    await page.goto('http://localhost:8787/');
+    await page.goto('http://localhost:18787/');
     await page.waitForLoadState('networkidle');
 
     console.log('\n========== KEYBOARD NAVIGATION TEST ==========');
@@ -141,7 +141,7 @@ test.describe('A11y & UX Review', () => {
   });
 
   test('ARIA attributes and semantic HTML', async ({ page }) => {
-    await page.goto('http://localhost:8787/');
+    await page.goto('http://localhost:18787/');
     await page.waitForLoadState('networkidle');
 
     console.log('\n========== ARIA & SEMANTIC HTML TEST ==========');
@@ -249,7 +249,7 @@ test.describe('A11y & UX Review', () => {
   });
 
   test('Color contrast ratios', async ({ page }) => {
-    await page.goto('http://localhost:8787/');
+    await page.goto('http://localhost:18787/');
     await page.waitForLoadState('networkidle');
 
     console.log('\n========== COLOR CONTRAST TEST ==========');
@@ -370,7 +370,7 @@ test.describe('A11y & UX Review', () => {
 
     // Test desktop viewport
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('http://localhost:8787/');
+    await page.goto('http://localhost:18787/');
     await page.waitForLoadState('networkidle');
 
     console.log('\n--- Desktop (1920x1080) ---');
@@ -463,7 +463,7 @@ test.describe('A11y & UX Review', () => {
   });
 
   test('Screenshot capture for visual review', async ({ page }) => {
-    await page.goto('http://localhost:8787/');
+    await page.goto('http://localhost:18787/');
     await page.waitForLoadState('networkidle');
 
     // Capture full page

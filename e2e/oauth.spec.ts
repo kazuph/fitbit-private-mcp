@@ -6,7 +6,7 @@ import { test, expect, Page } from '@playwright/test';
  * These tests use the REAL Fitbit API - no mocks.
  * Prerequisites:
  * 1. Valid Fitbit credentials in .env (FITBIT_CLIENT_ID, FITBIT_CLIENT_SECRET)
- * 2. Fitbit developer app configured with redirect URI: http://localhost:8787/auth/callback
+ * 2. Fitbit developer app configured with redirect URI: http://localhost:18787/auth/callback
  * 3. Manual test: User needs to login to Fitbit during interactive test run
  */
 
