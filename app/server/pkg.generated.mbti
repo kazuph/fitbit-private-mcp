@@ -3,6 +3,7 @@ package "kazuph/fitbit_health/server"
 
 import(
   "mizchi/js/core"
+  "mizchi/js/web/url"
   "mizchi/luna/luna"
   "mizchi/luna/sol/action"
   "mizchi/luna/sol/router"
@@ -11,15 +12,23 @@ import(
 // Values
 pub fn action_registry() -> @action.ActionRegistry
 
+pub async fn analyze_health_data(@core.Any) -> @core.Any
+
 pub fn array_get(@core.Any, Int) -> @core.Any
 
 pub fn array_len(@core.Any) -> Int
+
+pub async fn build_daily_summary(String, String?, Double?) -> @core.Any
 
 pub fn build_mcp_response(Bool, @core.Any, Int, String) -> @core.Any
 
 pub fn build_tools_response() -> @core.Any
 
+pub fn calculate_expiry(Int) -> String
+
 pub fn config() -> @router.RouterConfig
+
+pub fn console_log(String) -> Unit
 
 pub async fn db_get_daily_summaries(Int) -> @core.Any
 
@@ -43,27 +52,73 @@ pub async fn db_get_token_status() -> @core.Any
 
 pub async fn db_is_authenticated() -> Bool
 
+pub async fn exchange_auth_code(String, String) -> @core.Any
+
+pub async fn fetch_activity_data(String, String) -> @core.Any
+
+pub async fn fetch_heart_data(String, String) -> @core.Any
+
+pub async fn fetch_sleep_data(String, String) -> @core.Any
+
+pub async fn fetch_spo2_data(String, String) -> @core.Any
+
+pub async fn fetch_vo2max_data(String, String) -> @core.Any
+
+pub async fn fetch_weight_data(String, String) -> @core.Any
+
 pub fn format_date(String) -> String
 
 pub fn format_float(Double, Int) -> String
+
+pub fn format_health_insights_for_slack(HealthInsights, String) -> String
+
+pub fn format_minutes_to_hours(Int) -> String
 
 pub fn format_number(Int) -> String
 
 pub fn get_bool(@core.Any, String) -> Bool
 
+pub fn get_current_time_jst() -> String
+
+pub fn get_env(String) -> String
+
 pub fn get_float(@core.Any, String) -> Double
+
+pub fn get_float_opt(@core.Any, String) -> Double?
 
 pub fn get_int(@core.Any, String) -> Int
 
+pub fn get_int_opt(@core.Any, String) -> Int?
+
+pub async fn get_stored_token(String) -> @core.Any
+
 pub fn get_str(@core.Any, String) -> String
+
+pub fn get_str_opt(@core.Any, String) -> String?
+
+pub async fn get_sync_state(String) -> String?
 
 pub fn get_timestamp() -> String
 
 pub fn get_today_date() -> String
 
+pub fn get_today_iso() -> String
+
+pub async fn get_valid_access_token(String) -> (String?, String?)
+
+pub fn get_yesterday_jst() -> String
+
 pub fn is_null(@core.Any) -> Bool
 
 pub fn is_today(String) -> Bool
+
+pub fn is_token_expired(String) -> Bool
+
+pub fn json_parse(String) -> @core.Any
+
+pub fn json_stringify(@core.Any) -> String
+
+pub fn math_floor(Double) -> Int
 
 pub async fn mcp_activity_handler(@router.PageProps) -> @core.Any
 
@@ -97,19 +152,99 @@ pub async fn mcp_vo2max_handler(@router.PageProps) -> @core.Any
 
 pub async fn mcp_weight_handler(@router.PageProps) -> @core.Any
 
+pub fn new_url_search_params() -> @url.URLSearchParams
+
+pub fn parse_activity_data(@core.Any) -> @core.Any
+
 pub fn parse_days_param(@router.PageProps, Int) -> Int
+
+pub fn parse_health_insights(@core.Any) -> HealthInsights
+
+pub fn parse_health_summary(@core.Any) -> HealthSummary
+
+pub fn parse_heart_data(@core.Any) -> @core.Any
+
+pub fn parse_sleep_data(@core.Any) -> @core.Any
+
+pub async fn post_daily_health_report() -> Unit
+
+pub async fn post_error_to_slack(String, String?) -> Bool
+
+pub async fn post_health_insights_to_slack(@core.Any, String) -> Bool
+
+pub async fn post_to_slack(String) -> Bool
 
 pub fn progress_bar(Int, Int, id? : String, class? : String, style? : String) -> @luna.Node[Unit]
 
+pub async fn refresh_oauth_token(String) -> @core.Any
+
 pub fn routes() -> Array[@router.SolRoutes]
+
+pub fn safe_bool(@core.Any) -> Bool
+
+pub fn safe_double(@core.Any) -> Double
+
+pub fn safe_int(@core.Any) -> Int
+
+pub fn safe_string(@core.Any) -> String
+
+pub async fn save_oauth_token(String, String, String, String, String) -> Unit
+
+pub async fn set_sync_state(String, String) -> Unit
+
+pub async fn sync_health_data(String, String) -> (String?, Double?)
 
 pub fn time(datetime? : String, id? : String, class? : String, style? : String, attrs? : Array[(String, @luna.Attr[Unit])], Array[@luna.Node[Unit]]) -> @luna.Node[Unit]
 
+pub fn to_array(@core.Any) -> Array[@core.Any]
+
 pub fn truncate_str(String, Int) -> String
+
+pub async fn update_daily_summary(String, String?, Double?) -> Unit
+
+pub async fn update_oauth_token(String, String, String, String) -> Unit
 
 // Errors
 
 // Types and methods
+pub struct HealthInsights {
+  summary : String
+  highlights : Array[String]
+  improvements : Array[String]
+  actionable_tips : Array[String]
+}
+pub fn HealthInsights::empty() -> Self
+pub fn HealthInsights::has_content(Self) -> Bool
+pub fn HealthInsights::to_js(Self) -> @core.Any
+
+pub struct HealthSummary {
+  date : String
+  steps : Int
+  calories : Int
+  distance : Double
+  active_minutes : Int
+  resting_heart_rate : Int?
+  sleep_duration_minutes : Int
+  sleep_efficiency : Int?
+  weight : Double?
+  vo2max : String?
+  spo2_avg : Double?
+  sleep_stages : SleepStages?
+  heart_rate_zones : HeartRateZones?
+}
+
+pub struct HeartRateZones {
+  fat_burn : Int
+  cardio : Int
+  peak : Int
+}
+
+pub struct SleepStages {
+  deep : Int
+  light : Int
+  rem : Int
+  wake : Int
+}
 
 // Type aliases
 

@@ -10,7 +10,47 @@
     { "path": "mizchi/js/core", "alias": "core" },
     { "path": "mizchi/js/builtins/global", "alias": "global" },
     { "path": "mizchi/cloudflare", "alias": "cloudflare" },
+    { "path": "mizchi/js/web/http", "alias": "http" },
+    { "path": "mizchi/js/web/console", "alias": "console" },
+    { "path": "mizchi/js/web/url", "alias": "url" },
     { "path": "kazuph/fitbit_health/__gen__/types", "alias": "types" }
   ],
+  "link": {
+    "js": {
+      "exports": [
+        "analyze_health_data",
+        "post_to_slack",
+        "post_health_insights_to_slack",
+        "post_error_to_slack",
+        "format_health_insights_for_slack",
+        "fetch_activity_data",
+        "fetch_sleep_data",
+        "fetch_heart_data",
+        "fetch_weight_data",
+        "fetch_vo2max_data",
+        "fetch_spo2_data",
+        "refresh_oauth_token",
+        "exchange_auth_code",
+        "get_today_iso",
+        "parse_activity_data",
+        "parse_sleep_data",
+        "parse_heart_data",
+        "build_daily_summary",
+        "update_daily_summary",
+        "sync_health_data",
+        "is_token_expired",
+        "calculate_expiry",
+        "get_stored_token",
+        "save_oauth_token",
+        "update_oauth_token",
+        "get_valid_access_token",
+        "get_sync_state",
+        "set_sync_state",
+        "get_yesterday_jst",
+        "post_daily_health_report"
+      ],
+      "format": "esm"
+    }
+  },
   "warn-list": "-35"
 }

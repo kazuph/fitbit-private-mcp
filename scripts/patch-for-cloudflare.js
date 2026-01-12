@@ -18,11 +18,11 @@ let content = readFileSync(file, 'utf-8');
 let patched = false;
 
 // 1. random_seed をコメントアウトして固定値に置換
-const seedPattern = /^(const moonbitlang\$core\$builtin\$\$seed = moonbitlang\$core\$builtin\$\$random_seed\(\);)$/m;
-if (seedPattern.test(content)) {
+const seedLine = 'const moonbitlang$core$builtin$$seed = moonbitlang$core$builtin$$random_seed();';
+if (content.includes(seedLine)) {
   content = content.replace(
-    seedPattern,
-    '// $1\nconst moonbitlang$$core$$builtin$$$$seed = 123456789;'
+    seedLine,
+    '// ' + seedLine + '\nconst moonbitlang$core$builtin$$seed = 123456789;'
   );
   patched = true;
   console.log('  Patched: random_seed() -> fixed value');

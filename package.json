@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "generate": "sol generate && node scripts/patch-types.js",
-    "build:moon": "moon build --target js",
-    "build:patch": "node scripts/patch-for-cloudflare.js target/js/release/build/__gen__/server/server.js",
+    "generate": "PATH=$HOME/.moon/bin:$PATH sol generate && node scripts/patch-types.js",
+    "build:moon": "PATH=$HOME/.moon/bin:$PATH moon build --target js",
+    "build:patch": "node scripts/patch-for-cloudflare.js target/js/release/build/__gen__/server/server.js && node scripts/patch-for-cloudflare.js target/js/release/build/server/server.js",
     "build:client": "node scripts/bundle-client.js",
     "build": "npm run generate && npm run build:moon && npm run build:patch && npm run build:client",
     "dev": "npm run build && wrangler dev --port 18787",
