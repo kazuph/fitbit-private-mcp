@@ -120,6 +120,30 @@ pub async fn db_get_latest_weight() -> @core.Any {
   }
 }
 
+///| Get latest VO2max data
+pub async fn db_get_latest_vo2max() -> @core.Any {
+  let db = get_db()
+  let row = db
+    .prepare("SELECT * FROM vo2max_data ORDER BY date DESC LIMIT 1")
+    .first()
+  match row {
+    Some(r) => r
+    None => @core.null()
+  }
+}
+
+///| Get latest SpO2 data
+pub async fn db_get_latest_spo2() -> @core.Any {
+  let db = get_db()
+  let row = db
+    .prepare("SELECT * FROM spo2_data ORDER BY date DESC LIMIT 1")
+    .first()
+  match row {
+    Some(r) => r
+    None => @core.null()
+  }
+}
+
 ///| Get OAuth token expiry status
 pub async fn db_get_token_status() -> @core.Any {
   let db = get_db()

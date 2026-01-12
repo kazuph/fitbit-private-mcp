@@ -6,13 +6,15 @@
  * - API Key Auth for MCP endpoint (/mcp)
  * - Fitbit OAuth 2.0 flow
  * - Cron-triggered data sync
+ * - Daily Slack health report with Gemini analysis
  */
 import { Hono } from 'hono';
 import { basicAuth } from 'hono/basic-auth';
-import { bearerAuth } from 'hono/bearer-auth';
 import { timingSafeEqual } from 'hono/utils/buffer';
 import { cors } from 'hono/cors';
 import { configure_app } from '../target/js/release/build/__gen__/server/server.js';
+import { postHealthInsightsToSlack, postErrorToSlack } from './services/slack.js';
+import { analyzeHealthData, type HealthSummary } from './services/gemini.js';
 
 type Env = {
   DB: D1Database;
@@ -22,6 +24,10 @@ type Env = {
   FITBIT_CLIENT_SECRET: string;
   FITBIT_REDIRECT_URI: string;
   MCP_API_KEY: string;
+  // Slack & Gemini
+  SLACK_BOT_TOKEN?: string;
+  SLACK_CHANNEL?: string;
+  GEMINI_API_KEY?: string;
 };
 
 // Fitbit API Response Types
@@ -91,6 +97,26 @@ interface FitbitWeightEntry {
 
 interface FitbitWeightResponse {
   weight: FitbitWeightEntry[];
+}
+
+// VO2max Response
+interface FitbitVO2maxResponse {
+  cardioScore: Array<{
+    dateTime: string;
+    value: {
+      vo2Max: string;
+    };
+  }>;
+}
+
+// SpO2 Response
+interface FitbitSpO2Response {
+  dateTime: string;
+  value: {
+    avg: number;
+    min: number;
+    max: number;
+  };
 }
 
 // Timing-safe comparison helper
@@ -165,7 +191,8 @@ app.use('/*', async (c, next) => {
 app.get('/auth/fitbit', (c) => {
   const clientId = c.env.FITBIT_CLIENT_ID;
   const redirectUri = c.env.FITBIT_REDIRECT_URI;
-  const scope = 'activity heartrate sleep weight profile';
+  // Extended scopes to include cardio_fitness (VO2max) and oxygen_saturation (SpO2)
+  const scope = 'activity heartrate sleep weight profile cardio_fitness oxygen_saturation';
 
   const authUrl = new URL('https://www.fitbit.com/oauth2/authorize');
   authUrl.searchParams.set('response_type', 'code');
@@ -195,11 +222,11 @@ app.get('/auth/callback', async (c) => {
     const redirectUri = c.env.FITBIT_REDIRECT_URI;
 
     // Exchange code for tokens
-    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    const basicAuthHeader = btoa(`${clientId}:${clientSecret}`);
     const tokenResponse = await fetch('https://api.fitbit.com/oauth2/token', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${basicAuth}`,
+        'Authorization': `Basic ${basicAuthHeader}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
@@ -280,12 +307,12 @@ app.post('/api/sync', async (c) => {
     if (expiresAt < new Date()) {
       const clientId = c.env.FITBIT_CLIENT_ID;
       const clientSecret = c.env.FITBIT_CLIENT_SECRET;
-      const basicAuth = btoa(`${clientId}:${clientSecret}`);
+      const basicAuthHeader = btoa(`${clientId}:${clientSecret}`);
 
       const refreshResponse = await fetch('https://api.fitbit.com/oauth2/token', {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${basicAuth}`,
+          'Authorization': `Basic ${basicAuthHeader}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
@@ -345,6 +372,18 @@ app.post('/api/sync', async (c) => {
       { headers }
     );
 
+    // Fetch VO2max
+    const vo2maxResponse = await fetch(
+      `https://api.fitbit.com/1/user/-/cardioscore/date/${today}.json`,
+      { headers }
+    );
+
+    // Fetch SpO2
+    const spo2Response = await fetch(
+      `https://api.fitbit.com/1/user/-/spo2/date/${today}.json`,
+      { headers }
+    );
+
     // Process and store activity data
     if (activityResponse.ok) {
       const activityData = await activityResponse.json() as FitbitActivityResponse;
@@ -377,10 +416,12 @@ app.post('/api/sync', async (c) => {
     }
 
     // Process and store sleep data
+    let sleepStages: FitbitSleepStages | null = null;
     if (sleepResponse.ok) {
       const sleepData = await sleepResponse.json() as FitbitSleepResponse;
       const sleep = sleepData.sleep?.[0];
       const stages = sleepData.summary?.stages;
+      sleepStages = stages || null;
 
       if (sleep) {
         await db.prepare(`
@@ -409,12 +450,18 @@ app.post('/api/sync', async (c) => {
     }
 
     // Process and store heart rate data
+    let hrZones: { fat_burn: number; cardio: number; peak: number } | null = null;
     if (heartResponse.ok) {
       const heartData = await heartResponse.json() as FitbitHeartRateResponse;
       const hrValue = heartData['activities-heart']?.[0]?.value;
 
       if (hrValue) {
         const zones = hrValue.heartRateZones || [];
+        hrZones = {
+          fat_burn: zones.find((z: FitbitHeartRateZone) => z.name === 'Fat Burn')?.minutes || 0,
+          cardio: zones.find((z: FitbitHeartRateZone) => z.name === 'Cardio')?.minutes || 0,
+          peak: zones.find((z: FitbitHeartRateZone) => z.name === 'Peak')?.minutes || 0,
+        };
         await db.prepare(`
           INSERT INTO heart_rate (date, resting_heart_rate, out_of_range_minutes,
             fat_burn_minutes, cardio_minutes, peak_minutes, raw_data)
@@ -430,9 +477,9 @@ app.post('/api/sync', async (c) => {
           today,
           hrValue.restingHeartRate || null,
           zones.find((z: FitbitHeartRateZone) => z.name === 'Out of Range')?.minutes || 0,
-          zones.find((z: FitbitHeartRateZone) => z.name === 'Fat Burn')?.minutes || 0,
-          zones.find((z: FitbitHeartRateZone) => z.name === 'Cardio')?.minutes || 0,
-          zones.find((z: FitbitHeartRateZone) => z.name === 'Peak')?.minutes || 0,
+          hrZones.fat_burn,
+          hrZones.cardio,
+          hrZones.peak,
           JSON.stringify(heartData)
         ).run();
       }
@@ -454,8 +501,51 @@ app.post('/api/sync', async (c) => {
       }
     }
 
-    // Update daily summary
-    await updateDailySummary(db, today);
+    // Process and store VO2max data
+    let vo2maxValue: string | null = null;
+    if (vo2maxResponse.ok) {
+      const vo2maxData = await vo2maxResponse.json() as FitbitVO2maxResponse;
+      const cardioScore = vo2maxData.cardioScore?.[0];
+
+      if (cardioScore) {
+        vo2maxValue = cardioScore.value.vo2Max;
+        await db.prepare(`
+          INSERT INTO vo2max_data (date, vo2max, raw_data)
+          VALUES (?, ?, ?)
+          ON CONFLICT(date) DO UPDATE SET
+            vo2max = excluded.vo2max,
+            raw_data = excluded.raw_data
+        `).bind(cardioScore.dateTime, vo2maxValue, JSON.stringify(vo2maxData)).run();
+      }
+    }
+
+    // Process and store SpO2 data
+    let spo2Avg: number | null = null;
+    if (spo2Response.ok) {
+      const spo2Data = await spo2Response.json() as FitbitSpO2Response;
+
+      if (spo2Data.value) {
+        spo2Avg = spo2Data.value.avg;
+        await db.prepare(`
+          INSERT INTO spo2_data (date, avg, min, max, raw_data)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(date) DO UPDATE SET
+            avg = excluded.avg,
+            min = excluded.min,
+            max = excluded.max,
+            raw_data = excluded.raw_data
+        `).bind(
+          spo2Data.dateTime,
+          spo2Data.value.avg,
+          spo2Data.value.min,
+          spo2Data.value.max,
+          JSON.stringify(spo2Data)
+        ).run();
+      }
+    }
+
+    // Update daily summary with VO2max and SpO2
+    await updateDailySummary(db, today, vo2maxValue, spo2Avg);
 
     if (fromForm) {
       return c.redirect('/?sync=success');
@@ -470,8 +560,36 @@ app.post('/api/sync', async (c) => {
   }
 });
 
+// Test Slack posting (for debugging) - protected by global basic auth middleware
+app.post('/api/test-slack', async (c) => {
+  try {
+    const { postToSlack } = await import('./services/slack');
+    const result = await postToSlack(c.env, '🧪 Fitbit Health Dashboard - Slack連携テスト\n\nこのメッセージが表示されていればSlack連携は正常に動作しています。');
+    return c.json({ success: result, message: result ? 'Test message posted' : 'Failed to post' });
+  } catch (err) {
+    console.error('Slack test error:', err);
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+// Test daily report (for debugging - posts actual health data) - protected by global basic auth middleware
+app.post('/api/test-report', async (c) => {
+  try {
+    await postDailyHealthReport(c.env);
+    return c.json({ success: true, message: 'Daily report triggered' });
+  } catch (err) {
+    console.error('Report test error:', err);
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
 // Helper function to update daily summary
-async function updateDailySummary(db: D1Database, date: string) {
+async function updateDailySummary(
+  db: D1Database,
+  date: string,
+  vo2max: string | null = null,
+  spo2Avg: number | null = null
+) {
   const activity = await db.prepare(
     'SELECT * FROM daily_activity WHERE date = ?'
   ).bind(date).first();
@@ -495,15 +613,17 @@ async function updateDailySummary(db: D1Database, date: string) {
 
   await db.prepare(`
     INSERT INTO daily_summary (date, steps, calories, distance, active_minutes,
-      resting_heart_rate, sleep_duration_minutes, sleep_efficiency, weight)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      resting_heart_rate, sleep_duration_minutes, sleep_efficiency, weight, vo2max, spo2_avg)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(date) DO UPDATE SET
       steps = excluded.steps, calories = excluded.calories,
       distance = excluded.distance, active_minutes = excluded.active_minutes,
       resting_heart_rate = excluded.resting_heart_rate,
       sleep_duration_minutes = excluded.sleep_duration_minutes,
       sleep_efficiency = excluded.sleep_efficiency,
-      weight = excluded.weight
+      weight = excluded.weight,
+      vo2max = excluded.vo2max,
+      spo2_avg = excluded.spo2_avg
   `).bind(
     date,
     (activity?.steps as number) || 0,
@@ -513,8 +633,110 @@ async function updateDailySummary(db: D1Database, date: string) {
     (heart?.resting_heart_rate as number) || null,
     (sleep?.duration_minutes as number) || 0,
     (sleep?.efficiency as number) || null,
-    (weight?.weight as number) || null
+    (weight?.weight as number) || null,
+    vo2max,
+    spo2Avg
   ).run();
+}
+
+// Helper function to get yesterday's date in JST
+function getYesterdayJST(): string {
+  const now = new Date();
+  // Convert to JST (UTC+9)
+  const jstOffset = 9 * 60 * 60 * 1000;
+  const jstNow = new Date(now.getTime() + jstOffset);
+  jstNow.setDate(jstNow.getDate() - 1);
+  return jstNow.toISOString().split('T')[0];
+}
+
+// Helper function to post daily health report to Slack
+async function postDailyHealthReport(env: Env) {
+  const db = env.DB;
+  const yesterday = getYesterdayJST();
+
+  try {
+    // Check if already posted today
+    const stateKey = 'slack:dailyReportDate';
+    const lastPosted = await db.prepare(
+      'SELECT value FROM sync_state WHERE key = ?'
+    ).bind(stateKey).first();
+
+    if (lastPosted?.value === yesterday) {
+      console.log('Daily report already posted for:', yesterday);
+      return;
+    }
+
+    // Get yesterday's summary
+    const summary = await db.prepare(
+      'SELECT * FROM daily_summary WHERE date = ?'
+    ).bind(yesterday).first();
+
+    if (!summary) {
+      console.log('No summary data for:', yesterday);
+      return;
+    }
+
+    // Get detailed data for Gemini analysis
+    const sleep = await db.prepare(
+      'SELECT * FROM sleep_data WHERE date = ?'
+    ).bind(yesterday).first();
+
+    const heart = await db.prepare(
+      'SELECT * FROM heart_rate WHERE date = ?'
+    ).bind(yesterday).first();
+
+    // Build health summary for Gemini
+    const healthData: HealthSummary = {
+      date: yesterday,
+      steps: (summary.steps as number) || 0,
+      calories: (summary.calories as number) || 0,
+      distance: (summary.distance as number) || 0,
+      active_minutes: (summary.active_minutes as number) || 0,
+      resting_heart_rate: (summary.resting_heart_rate as number) || null,
+      sleep_duration_minutes: (summary.sleep_duration_minutes as number) || 0,
+      sleep_efficiency: (summary.sleep_efficiency as number) || null,
+      weight: (summary.weight as number) || null,
+      vo2max: (summary.vo2max as string) || null,
+      spo2_avg: (summary.spo2_avg as number) || null,
+      sleep_stages: sleep ? {
+        deep: (sleep.deep_minutes as number) || 0,
+        light: (sleep.light_minutes as number) || 0,
+        rem: (sleep.rem_minutes as number) || 0,
+        wake: (sleep.wake_minutes as number) || 0,
+      } : undefined,
+      heart_rate_zones: heart ? {
+        fat_burn: (heart.fat_burn_minutes as number) || 0,
+        cardio: (heart.cardio_minutes as number) || 0,
+        peak: (heart.peak_minutes as number) || 0,
+      } : undefined,
+    };
+
+    // Analyze with Gemini
+    const insights = await analyzeHealthData(env, healthData);
+
+    if (insights) {
+      // Post to Slack
+      const posted = await postHealthInsightsToSlack(env, insights, yesterday);
+
+      if (posted) {
+        // Update state to prevent duplicate posts
+        await db.prepare(`
+          INSERT INTO sync_state (key, value, updated_at)
+          VALUES (?, ?, datetime('now'))
+          ON CONFLICT(key) DO UPDATE SET
+            value = excluded.value,
+            updated_at = excluded.updated_at
+        `).bind(stateKey, yesterday).run();
+
+        console.log('Daily health report posted for:', yesterday);
+      }
+    } else {
+      console.log('Failed to generate insights for:', yesterday);
+    }
+  } catch (error) {
+    console.error('Error posting daily health report:', error);
+    await postErrorToSlack(env, error as Error, 'Daily Health Report');
+  }
 }
 
 // Configure MoonBit/Luna routes for dashboard UI
@@ -538,7 +760,7 @@ export default {
     return response;
   },
 
-  // Cron trigger for automatic data sync
+  // Cron trigger for automatic data sync and daily report
   scheduled: async (event: ScheduledEvent, env: Env, ctx: ExecutionContext) => {
     console.log('Cron triggered:', event.cron);
 
@@ -555,8 +777,18 @@ export default {
     try {
       await app.fetch(syncRequest, env, ctx);
       console.log('Cron sync completed successfully');
+
+      // Check if it's morning report time (UTC 22:00 = JST 07:00)
+      const now = new Date();
+      const utcHour = now.getUTCHours();
+
+      if (utcHour === 22) {
+        console.log('Posting daily health report...');
+        ctx.waitUntil(postDailyHealthReport(env));
+      }
     } catch (err) {
       console.error('Cron sync failed:', err);
+      ctx.waitUntil(postErrorToSlack(env, err as Error, 'Cron Sync'));
     }
   },
 };

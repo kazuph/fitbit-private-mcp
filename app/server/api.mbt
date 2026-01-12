@@ -55,6 +55,26 @@ pub async fn mcp_get_weight(days : Int) -> @core.Any {
   result.results_raw()
 }
 
+///| Get VO2max data for MCP
+pub async fn mcp_get_vo2max(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM vo2max_data ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
+
+///| Get SpO2 data for MCP
+pub async fn mcp_get_spo2(days : Int) -> @core.Any {
+  let db = get_db()
+  let result = db
+    .prepare("SELECT * FROM spo2_data ORDER BY date DESC LIMIT ?")
+    .bind1(@core.any(days))
+    .all()
+  result.results_raw()
+}
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -173,6 +193,36 @@ pub fn build_tools_response() -> @core.Any {
   tool5._set("parameters", params5)
   @core.any(tools)._call("push", [tool5]) |> ignore
 
+  // Tool 6: get_vo2max_data
+  let tool6 = @core.new_object()
+  tool6._set("name", @core.any("get_vo2max_data"))
+  tool6._set("description", @core.any("Get VO2max (cardio fitness score) data - measures cardiovascular fitness"))
+  let params6 = @core.new_object()
+  params6._set("type", @core.any("object"))
+  let props6 = @core.new_object()
+  let days_prop6 = @core.new_object()
+  days_prop6._set("type", @core.any("number"))
+  days_prop6._set("description", @core.any("Number of days to retrieve (default: 30)"))
+  props6._set("days", days_prop6)
+  params6._set("properties", props6)
+  tool6._set("parameters", params6)
+  @core.any(tools)._call("push", [tool6]) |> ignore
+
+  // Tool 7: get_spo2_data
+  let tool7 = @core.new_object()
+  tool7._set("name", @core.any("get_spo2_data"))
+  tool7._set("description", @core.any("Get SpO2 (blood oxygen saturation) data - measured during sleep"))
+  let params7 = @core.new_object()
+  params7._set("type", @core.any("object"))
+  let props7 = @core.new_object()
+  let days_prop7 = @core.new_object()
+  days_prop7._set("type", @core.any("number"))
+  days_prop7._set("description", @core.any("Number of days to retrieve (default: 7)"))
+  props7._set("days", days_prop7)
+  params7._set("properties", props7)
+  tool7._set("parameters", params7)
+  @core.any(tools)._call("push", [tool7]) |> ignore
+
   let result = @core.new_object()
   result._set("tools", @core.any(tools))
   result
@@ -227,6 +277,22 @@ pub async fn mcp_weight_handler(props : @router.PageProps) -> @core.Any {
   build_mcp_response(true, weight_data, days, end_date)
 }
 
+///| GET /mcp/vo2max - Get VO2max (cardio fitness) data
+pub async fn mcp_vo2max_handler(props : @router.PageProps) -> @core.Any {
+  let days = parse_days_param(props, 30) // Default 30 days for VO2max
+  let vo2max_data = mcp_get_vo2max(days)
+  let end_date = get_today_date()
+  build_mcp_response(true, vo2max_data, days, end_date)
+}
+
+///| GET /mcp/spo2 - Get SpO2 (blood oxygen) data
+pub async fn mcp_spo2_handler(props : @router.PageProps) -> @core.Any {
+  let days = parse_days_param(props, 7) // Default 7 days for SpO2
+  let spo2_data = mcp_get_spo2(days)
+  let end_date = get_today_date()
+  build_mcp_response(true, spo2_data, days, end_date)
+}
+
 // =============================================================================
 // MCP Routes Definition
 // =============================================================================
@@ -257,6 +323,14 @@ pub fn mcp_routes() -> Array[@router.SolRoutes] {
     @router.SolRoutes::Get(
       path="/mcp/weight",
       handler=@router.ApiHandler(mcp_weight_handler),
+    ),
+    @router.SolRoutes::Get(
+      path="/mcp/vo2max",
+      handler=@router.ApiHandler(mcp_vo2max_handler),
+    ),
+    @router.SolRoutes::Get(
+      path="/mcp/spo2",
+      handler=@router.ApiHandler(mcp_spo2_handler),
     ),
   ]
 }

@@ -29,6 +29,10 @@ pub async fn db_get_latest_heartrate() -> @core.Any
 
 pub async fn db_get_latest_sleep() -> @core.Any
 
+pub async fn db_get_latest_spo2() -> @core.Any
+
+pub async fn db_get_latest_vo2max() -> @core.Any
+
 pub async fn db_get_latest_weight() -> @core.Any
 
 pub async fn db_get_oauth_token(String) -> @core.Any
@@ -71,6 +75,10 @@ pub async fn mcp_get_heartrate(Int) -> @core.Any
 
 pub async fn mcp_get_sleep(Int) -> @core.Any
 
+pub async fn mcp_get_spo2(Int) -> @core.Any
+
+pub async fn mcp_get_vo2max(Int) -> @core.Any
+
 pub async fn mcp_get_weight(Int) -> @core.Any
 
 pub async fn mcp_health_handler(@router.PageProps) -> @core.Any
@@ -81,7 +89,11 @@ pub fn mcp_routes() -> Array[@router.SolRoutes]
 
 pub async fn mcp_sleep_handler(@router.PageProps) -> @core.Any
 
+pub async fn mcp_spo2_handler(@router.PageProps) -> @core.Any
+
 pub async fn mcp_tools_handler(@router.PageProps) -> @core.Any
+
+pub async fn mcp_vo2max_handler(@router.PageProps) -> @core.Any
 
 pub async fn mcp_weight_handler(@router.PageProps) -> @core.Any
 

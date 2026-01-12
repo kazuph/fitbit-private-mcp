@@ -79,6 +79,8 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
     let sleep = db_get_latest_sleep()
     let heartrate = db_get_latest_heartrate()
     let weight = db_get_latest_weight()
+    let vo2max = db_get_latest_vo2max()
+    let spo2 = db_get_latest_spo2()
     let summaries = db_get_daily_summaries(7)
 
     let last_sync = get_str(token_status, "lastSync")
@@ -107,6 +109,8 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
         render_sleep_card(sleep),
         render_heartrate_card(heartrate),
         render_weight_card(weight),
+        render_vo2max_card(vo2max),
+        render_spo2_card(spo2),
       ]),
       section(class="summary-section", [
         header(class="section-header", [
@@ -257,6 +261,71 @@ fn render_weight_card(weight : @core.Any) -> @luna.Node[Unit] {
   ])
 }
 
+fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit] {
+  let vo2max_val = get_str(vo2max, "vo2max")
+  let vo2max_text = if vo2max_val != "" { vo2max_val } else { "--" }
+  let date = get_str(vo2max, "date")
+  let date_text = if date != "" { format_date(date) } else { "--" }
+
+  // Fitness level based on VO2max range (simplified)
+  let fitness_level = if vo2max_val == "" {
+    "No data"
+  } else {
+    "Active"
+  }
+
+  article(attrs=[("aria-label", @luna.attr_static("VO2max: " + vo2max_text + " mL/kg/min"))], class="metric-card vo2max", [
+    div(class="metric-header", [
+      span(class="metric-label", [text("VO2max")]),
+      span(attrs=[("aria-hidden", @luna.attr_static("true"))], class="metric-icon", [text("🫀")]),
+    ]),
+    div(class="metric-value", [
+      span(class="metric-number", [text(vo2max_text)]),
+      span(class="metric-unit", [text("mL/kg/min")]),
+    ]),
+    div(class="metric-secondary", [
+      div(class="secondary-stat", [
+        span(class="secondary-stat-label", [text("Fitness")]),
+        span(class="secondary-stat-value", [text(fitness_level)]),
+      ]),
+      div(class="secondary-stat", [
+        span(class="secondary-stat-label", [text("Updated")]),
+        span(class="secondary-stat-value", [text(date_text)]),
+      ]),
+    ]),
+  ])
+}
+
+fn render_spo2_card(spo2 : @core.Any) -> @luna.Node[Unit] {
+  let avg = get_float(spo2, "avg")
+  let min_val = get_float(spo2, "min")
+  let max_val = get_float(spo2, "max")
+  let avg_text = if avg > 0.0 { format_float(avg, 1) } else { "--" }
+  let min_text = if min_val > 0.0 { format_float(min_val, 1) } else { "--" }
+  let max_text = if max_val > 0.0 { format_float(max_val, 1) } else { "--" }
+
+  article(attrs=[("aria-label", @luna.attr_static("SpO2: " + avg_text + "% average"))], class="metric-card spo2", [
+    div(class="metric-header", [
+      span(class="metric-label", [text("Blood Oxygen")]),
+      span(attrs=[("aria-hidden", @luna.attr_static("true"))], class="metric-icon", [text("💨")]),
+    ]),
+    div(class="metric-value", [
+      span(class="metric-number", [text(avg_text)]),
+      span(class="metric-unit", [text("% avg")]),
+    ]),
+    div(class="metric-secondary", [
+      div(class="secondary-stat", [
+        span(class="secondary-stat-label", [text("Min")]),
+        span(class="secondary-stat-value", [text(min_text + "%")]),
+      ]),
+      div(class="secondary-stat", [
+        span(class="secondary-stat-label", [text("Max")]),
+        span(class="secondary-stat-value", [text(max_text + "%")]),
+      ]),
+    ]),
+  ])
+}
+
 // =============================================================================
 // Summary List Renderer
 // =============================================================================
@@ -391,6 +460,8 @@ const ROOT : String =
   #|    .metric-card.sleep{--card-accent:var(--accent-purple)}
   #|    .metric-card.heartrate{--card-accent:var(--accent-red)}
   #|    .metric-card.weight{--card-accent:var(--accent-blue)}
+  #|    .metric-card.vo2max{--card-accent:#10b981}
+  #|    .metric-card.spo2{--card-accent:#06b6d4}
   #|    .metric-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg)}
   #|    .metric-label{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)}
   #|    .metric-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:var(--radius-md);font-size:1.25rem}

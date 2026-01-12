@@ -13,7 +13,10 @@
       "database_id": "20a7ca13-908b-46f2-9b30-ee4d919b521c"
     }
   ],
+  "vars": {
+    "SLACK_CHANNEL": "C09U8QFP3DJ"
+  },
   "triggers": {
-    "crons": ["0 */6 * * *"]
+    "crons": ["0 */6 * * *", "0 22 * * *"]
   }
 }
