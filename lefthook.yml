@@ -6,11 +6,13 @@ pre-commit:
   commands:
     moon-fmt:
       glob: "*.mbt"
+      exclude: "app/__gen__/**"
       run: moon fmt --check
       fail_text: "MoonBit formatting check failed. Run 'moon fmt' to fix."
 
     moon-check:
       glob: "*.mbt"
+      exclude: "app/__gen__/**"
       run: moon check
       fail_text: "MoonBit check failed. Please fix the errors above."
 
@@ -19,5 +21,6 @@ pre-push:
   commands:
     moon-check:
       glob: "*.mbt"
+      exclude: "app/__gen__/**"
       run: moon check
       fail_text: "MoonBit check failed. Please fix the errors before pushing."
