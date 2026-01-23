@@ -1,11 +1,13 @@
 ///| D1 Database Access Layer using mizchi/cloudflare package
+
 ///| Fitbit Health Data Access with minimal FFI
 
 // =============================================================================
 // Single FFI - D1 Database Binding Retrieval
 // =============================================================================
 
-///| Get D1 database from globalThis (only FFI needed)
+///|
+/// Get D1 database from globalThis (only FFI needed)
 extern "js" fn get_global_db() -> @core.Any =
   #| () => {
   #|   const db = globalThis.__D1_DB;
@@ -13,7 +15,8 @@ extern "js" fn get_global_db() -> @core.Any =
   #|   return db;
   #| }
 
-///| Convert JS D1 binding to typed D1Database
+///|
+/// Convert JS D1 binding to typed D1Database
 fn get_db() -> @cloudflare.D1Database {
   let db_js : @core.Any = get_global_db()
   @core.identity(db_js)
@@ -23,7 +26,8 @@ fn get_db() -> @cloudflare.D1Database {
 // D1 Database Access Functions (MoonBit Native)
 // =============================================================================
 
-///| Get OAuth token for user
+///|
+/// Get OAuth token for user
 pub async fn db_get_oauth_token(user_id : String) -> @core.Any {
   let db = get_db()
   let row = db
@@ -36,7 +40,8 @@ pub async fn db_get_oauth_token(user_id : String) -> @core.Any {
   }
 }
 
-///| Check if user is authenticated
+///|
+/// Check if user is authenticated
 pub async fn db_is_authenticated() -> Bool {
   let db = get_db()
   let row = db
@@ -48,7 +53,8 @@ pub async fn db_is_authenticated() -> Bool {
   }
 }
 
-///| Get daily summaries for dashboard
+///|
+/// Get daily summaries for dashboard
 pub async fn db_get_daily_summaries(limit : Int) -> @core.Any {
   let db = get_db()
   let result = db
@@ -58,7 +64,8 @@ pub async fn db_get_daily_summaries(limit : Int) -> @core.Any {
   result.results_raw()
 }
 
-///| Get today's summary
+///|
+/// Get today's summary
 pub async fn db_get_today_summary() -> @core.Any {
   let db = get_db()
   let today = get_today_str()
@@ -72,7 +79,8 @@ pub async fn db_get_today_summary() -> @core.Any {
   }
 }
 
-///| Get latest activity data
+///|
+/// Get latest activity data
 pub async fn db_get_latest_activity() -> @core.Any {
   let db = get_db()
   let row = db
@@ -84,7 +92,8 @@ pub async fn db_get_latest_activity() -> @core.Any {
   }
 }
 
-///| Get latest sleep data
+///|
+/// Get latest sleep data
 pub async fn db_get_latest_sleep() -> @core.Any {
   let db = get_db()
   let row = db
@@ -96,7 +105,8 @@ pub async fn db_get_latest_sleep() -> @core.Any {
   }
 }
 
-///| Get latest heart rate data
+///|
+/// Get latest heart rate data
 pub async fn db_get_latest_heartrate() -> @core.Any {
   let db = get_db()
   let row = db
@@ -108,7 +118,8 @@ pub async fn db_get_latest_heartrate() -> @core.Any {
   }
 }
 
-///| Get latest weight data
+///|
+/// Get latest weight data
 pub async fn db_get_latest_weight() -> @core.Any {
   let db = get_db()
   let row = db
@@ -120,7 +131,8 @@ pub async fn db_get_latest_weight() -> @core.Any {
   }
 }
 
-///| Get latest VO2max data
+///|
+/// Get latest VO2max data
 pub async fn db_get_latest_vo2max() -> @core.Any {
   let db = get_db()
   let row = db
@@ -132,7 +144,8 @@ pub async fn db_get_latest_vo2max() -> @core.Any {
   }
 }
 
-///| Get latest SpO2 data
+///|
+/// Get latest SpO2 data
 pub async fn db_get_latest_spo2() -> @core.Any {
   let db = get_db()
   let row = db
@@ -144,11 +157,14 @@ pub async fn db_get_latest_spo2() -> @core.Any {
   }
 }
 
-///| Get OAuth token expiry status
+///|
+/// Get OAuth token expiry status
 pub async fn db_get_token_status() -> @core.Any {
   let db = get_db()
   let row = db
-    .prepare("SELECT expires_at, updated_at FROM oauth_tokens WHERE user_id = 'default'")
+    .prepare(
+      "SELECT expires_at, updated_at FROM oauth_tokens WHERE user_id = 'default'",
+    )
     .first()
   match row {
     None => {
@@ -173,7 +189,8 @@ pub async fn db_get_token_status() -> @core.Any {
 // Data Access Helpers (MoonBit Native - No FFI)
 // =============================================================================
 
-///| Extract string field from JS object
+///|
+/// Extract string field from JS object
 pub fn get_str(obj : @core.Any, field : String) -> String {
   if @core.is_nullish(obj) {
     return ""
@@ -186,7 +203,8 @@ pub fn get_str(obj : @core.Any, field : String) -> String {
   }
 }
 
-///| Extract int field from JS object
+///|
+/// Extract int field from JS object
 pub fn get_int(obj : @core.Any, field : String) -> Int {
   if @core.is_nullish(obj) {
     return 0
@@ -199,7 +217,8 @@ pub fn get_int(obj : @core.Any, field : String) -> Int {
   }
 }
 
-///| Extract float field from JS object
+///|
+/// Extract float field from JS object
 pub fn get_float(obj : @core.Any, field : String) -> Double {
   if @core.is_nullish(obj) {
     return 0.0
@@ -212,12 +231,14 @@ pub fn get_float(obj : @core.Any, field : String) -> Double {
   }
 }
 
-///| Check if JS value is null/undefined
+///|
+/// Check if JS value is null/undefined
 pub fn is_null(obj : @core.Any) -> Bool {
   @core.is_nullish(obj)
 }
 
-///| Get array length
+///|
+/// Get array length
 pub fn array_len(arr : @core.Any) -> Int {
   if @core.is_nullish(arr) {
     0
@@ -226,12 +247,14 @@ pub fn array_len(arr : @core.Any) -> Int {
   }
 }
 
-///| Get array element
+///|
+/// Get array element
 pub fn array_get(arr : @core.Any, idx : Int) -> @core.Any {
   arr._get_by_index(idx)
 }
 
-///| Get boolean field from JS object
+///|
+/// Get boolean field from JS object
 pub fn get_bool(obj : @core.Any, field : String) -> Bool {
   if @core.is_nullish(obj) {
     return false
@@ -248,15 +271,18 @@ pub fn get_bool(obj : @core.Any, field : String) -> Bool {
 // Date/Format Helpers (Minimal FFI for JS Date API)
 // =============================================================================
 
-///| Get today's date string (YYYY-MM-DD) - requires FFI for Date API
+///|
+/// Get today's date string (YYYY-MM-DD) - requires FFI for Date API
 extern "js" fn get_today_str() -> String =
   #| () => new Date().toISOString().split('T')[0]
 
-///| Get current timestamp (ISO format) - requires FFI for Date API
+///|
+/// Get current timestamp (ISO format) - requires FFI for Date API
 pub extern "js" fn get_timestamp() -> String =
   #| () => new Date().toISOString()
 
-///| Check if timestamp is expired - requires FFI for Date comparison
+///|
+/// Check if timestamp is expired - requires FFI for Date comparison
 extern "js" fn is_expired_timestamp(expires_at : String) -> Bool =
   #| (expiresAt) => {
   #|   if (!expiresAt) return true;
@@ -264,11 +290,13 @@ extern "js" fn is_expired_timestamp(expires_at : String) -> Bool =
   #|   return expiresDate < new Date();
   #| }
 
-///| Format number with commas - requires FFI for toLocaleString
+///|
+/// Format number with commas - requires FFI for toLocaleString
 pub extern "js" fn format_number(n : Int) -> String =
   #| (n) => n.toLocaleString()
 
-///| Format date to readable string - requires FFI for Date formatting
+///|
+/// Format date to readable string - requires FFI for Date formatting
 pub extern "js" fn format_date(date_str : String) -> String =
   #| (dateStr) => {
   #|   if (!dateStr) return '';
@@ -276,7 +304,8 @@ pub extern "js" fn format_date(date_str : String) -> String =
   #|   return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
   #| }
 
-///| Check if date is today - requires FFI for Date comparison
+///|
+/// Check if date is today - requires FFI for Date comparison
 pub extern "js" fn is_today(date_str : String) -> Bool =
   #| (dateStr) => {
   #|   if (!dateStr) return false;
@@ -284,7 +313,8 @@ pub extern "js" fn is_today(date_str : String) -> Bool =
   #|   return dateStr === today;
   #| }
 
-///| Truncate string to specified length
+///|
+/// Truncate string to specified length
 pub fn truncate_str(s : String, max_len : Int) -> String {
   let chars = s.to_array()
   if chars.length() <= max_len {
@@ -298,6 +328,7 @@ pub fn truncate_str(s : String, max_len : Int) -> String {
   }
 }
 
-///| Format float with decimals - requires FFI for toFixed
+///|
+/// Format float with decimals - requires FFI for toFixed
 pub extern "js" fn format_float(n : Double, decimals : Int) -> String =
   #| (n, decimals) => n.toFixed(decimals)

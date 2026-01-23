@@ -1,0 +1,23 @@
+# Lefthook configuration for MoonBit project
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: false
+  commands:
+    moon-fmt:
+      glob: "*.mbt"
+      run: moon fmt --check
+      fail_text: "MoonBit formatting check failed. Run 'moon fmt' to fix."
+
+    moon-check:
+      glob: "*.mbt"
+      run: moon check
+      fail_text: "MoonBit check failed. Please fix the errors above."
+
+pre-push:
+  parallel: false
+  commands:
+    moon-check:
+      glob: "*.mbt"
+      run: moon check
+      fail_text: "MoonBit check failed. Please fix the errors before pushing."

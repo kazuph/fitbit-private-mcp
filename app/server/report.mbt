@@ -12,7 +12,6 @@ pub async fn post_daily_health_report() -> Unit {
   // Check if already posted today
   let state_key = "slack:dailyReportDate"
   let last_posted = get_sync_state(state_key)
-
   match last_posted {
     Some(posted) =>
       if posted == yesterday {
@@ -27,7 +26,6 @@ pub async fn post_daily_health_report() -> Unit {
     .prepare("SELECT * FROM daily_summary WHERE date = ?")
     .bind1(@core.any(yesterday))
     .first()
-
   match summary_row {
     None => {
       console_log("No summary data for: " + yesterday)
@@ -39,7 +37,6 @@ pub async fn post_daily_health_report() -> Unit {
         .prepare("SELECT * FROM sleep_data WHERE date = ?")
         .bind1(@core.any(yesterday))
         .first()
-
       let heart_row = db
         .prepare("SELECT * FROM heart_rate WHERE date = ?")
         .bind1(@core.any(yesterday))
@@ -47,15 +44,11 @@ pub async fn post_daily_health_report() -> Unit {
 
       // Build health summary for Gemini (as @core.Any object)
       let health_data = build_health_data_object(
-        yesterday,
-        summary,
-        sleep_row,
-        heart_row,
+        yesterday, summary, sleep_row, heart_row,
       )
 
       // Analyze with Gemini
       let insights = analyze_health_data(health_data)
-
       if is_null(insights) {
         console_log("Failed to generate insights for: " + yesterday)
       } else {
@@ -77,7 +70,7 @@ fn build_health_data_object(
   date : String,
   summary : @core.Any,
   sleep_row : @core.Any?,
-  heart_row : @core.Any?
+  heart_row : @core.Any?,
 ) -> @core.Any {
   let obj = @core.new_object()
   obj._set("date", @core.any(date))
@@ -116,6 +109,5 @@ fn build_health_data_object(
     }
     None => ()
   }
-
   obj
 }

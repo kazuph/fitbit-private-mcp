@@ -12,7 +12,7 @@ export default defineConfig({
   workers: 1, // Single worker for sequential OAuth flow
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:8787',
+    baseURL: 'http://localhost:18787',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -32,7 +32,7 @@ export default defineConfig({
   // Start wrangler dev server before tests
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:8787',
+    url: 'http://localhost:18787',
     reuseExistingServer: !process.env.CI,
     timeout: 60000,
     env: {

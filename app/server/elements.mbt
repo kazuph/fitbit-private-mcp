@@ -1,16 +1,19 @@
 ///| Custom HTML element helpers
+
 ///| Elements not provided by Luna UI's static_dom/element package
 
 // =============================================================================
 // Helper function
 // =============================================================================
 
-///| Create a static attribute
+///|
+/// Create a static attribute
 fn static_attr(value : String) -> @luna.Attr[Unit] {
   @luna.attr_static(value)
 }
 
-///| Build attribute array from common properties
+///|
+/// Build attribute array from common properties
 fn build_attrs(
   id : String?,
   class : String?,
@@ -39,7 +42,8 @@ fn build_attrs(
 // Time Element (not in Luna UI)
 // =============================================================================
 
-///| Create a time element
+///|
+/// Create a time element
 pub fn time(
   datetime? : String,
   id? : String,
@@ -59,18 +63,16 @@ pub fn time(
 // Progress Element (custom component)
 // =============================================================================
 
-///| Create a progress bar component
+///|
+/// Create a progress bar component
 pub fn progress_bar(
   value : Int,
   max : Int,
-  id? : String,
   class? : String,
-  style? : String,
 ) -> @luna.Node[Unit] {
   let width_percent = if max > 0 { value * 100 / max } else { 0 }
   let bar_style = "width: " + width_percent.to_string() + "%"
-
-  div(class=class.or("progress-ring"), [
-    div(class="progress-ring-fill", style=bar_style, [])
+  div(class=class.unwrap_or("progress-ring"), [
+    div(class="progress-ring-fill", style=bar_style, []),
   ])
 }

@@ -97,13 +97,14 @@ pub fn safe_bool(value : @core.Any) -> Bool {
 /// Get optional string field (returns None if null)
 pub fn get_str_opt(obj : @core.Any, field : String) -> String? {
   if @core.is_nullish(obj) {
-    return None
-  }
-  let val = obj._get(field)
-  if @core.is_nullish(val) {
     None
   } else {
-    Some(val.to_string())
+    let val = obj._get(field)
+    if @core.is_nullish(val) {
+      None
+    } else {
+      Some(val.to_string())
+    }
   }
 }
 
@@ -111,13 +112,14 @@ pub fn get_str_opt(obj : @core.Any, field : String) -> String? {
 /// Get optional int field (returns None if null)
 pub fn get_int_opt(obj : @core.Any, field : String) -> Int? {
   if @core.is_nullish(obj) {
-    return None
-  }
-  let val = obj._get(field)
-  if @core.is_nullish(val) {
     None
   } else {
-    Some(val.cast())
+    let val = obj._get(field)
+    if @core.is_nullish(val) {
+      None
+    } else {
+      Some(val.cast())
+    }
   }
 }
 
@@ -125,13 +127,14 @@ pub fn get_int_opt(obj : @core.Any, field : String) -> Int? {
 /// Get optional double field (returns None if null)
 pub fn get_float_opt(obj : @core.Any, field : String) -> Double? {
   if @core.is_nullish(obj) {
-    return None
-  }
-  let val = obj._get(field)
-  if @core.is_nullish(val) {
     None
   } else {
-    Some(val.cast())
+    let val = obj._get(field)
+    if @core.is_nullish(val) {
+      None
+    } else {
+      Some(val.cast())
+    }
   }
 }
 
@@ -139,9 +142,10 @@ pub fn get_float_opt(obj : @core.Any, field : String) -> Double? {
 /// Convert Any to array for iteration
 pub fn to_array(arr : @core.Any) -> Array[@core.Any] {
   if @core.is_nullish(arr) {
-    return []
+    []
+  } else {
+    @core.array_from(arr)
   }
-  @core.array_from(arr)
 }
 
 ///|

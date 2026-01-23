@@ -108,6 +108,8 @@ pub async fn get_valid_access_token(String) -> (String?, String?)
 
 pub fn get_yesterday_jst() -> String
 
+pub fn header(id? : String, class? : String, style? : String, attrs? : Array[(String, @luna.Attr[Unit])], Array[@luna.Node[Unit]]) -> @luna.Node[Unit]
+
 pub fn is_null(@core.Any) -> Bool
 
 pub fn is_today(String) -> Bool
@@ -117,6 +119,8 @@ pub fn is_token_expired(String) -> Bool
 pub fn json_parse(String) -> @core.Any
 
 pub fn json_stringify(@core.Any) -> String
+
+pub fn main_el(id? : String, class? : String, style? : String, attrs? : Array[(String, @luna.Attr[Unit])], Array[@luna.Node[Unit]]) -> @luna.Node[Unit]
 
 pub fn math_floor(Double) -> Int
 
@@ -174,7 +178,7 @@ pub async fn post_health_insights_to_slack(@core.Any, String) -> Bool
 
 pub async fn post_to_slack(String) -> Bool
 
-pub fn progress_bar(Int, Int, id? : String, class? : String, style? : String) -> @luna.Node[Unit]
+pub fn progress_bar(Int, Int, class? : String) -> @luna.Node[Unit]
 
 pub async fn refresh_oauth_token(String) -> @core.Any
 

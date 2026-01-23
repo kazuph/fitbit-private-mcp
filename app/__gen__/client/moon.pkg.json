@@ -1,10 +1,6 @@
 {
   "supported-targets": ["js"],
-  "import": [
-    { "path": "mizchi/js/core", "alias": "js" },
-    { "path": "mizchi/js/browser/dom", "alias": "js_dom" },
-    { "path": "mizchi/luna/luna/dom", "alias": "wc" }
-  ],
+  "import": [],
   "link": {
     "js": {
       "exports": [],

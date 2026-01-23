@@ -12,8 +12,7 @@
     { "path": "mizchi/cloudflare", "alias": "cloudflare" },
     { "path": "mizchi/js/web/http", "alias": "http" },
     { "path": "mizchi/js/web/console", "alias": "console" },
-    { "path": "mizchi/js/web/url", "alias": "url" },
-    { "path": "kazuph/fitbit_health/__gen__/types", "alias": "types" }
+    { "path": "mizchi/js/web/url", "alias": "url" }
   ],
   "link": {
     "js": {
@@ -52,5 +51,5 @@
       "format": "esm"
     }
   },
-  "warn-list": "-35"
+  "warn-list": "-35-67-24"
 }

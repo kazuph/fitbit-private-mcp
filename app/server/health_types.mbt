@@ -48,12 +48,7 @@ pub struct HealthInsights {
 ///|
 /// Create empty health insights
 pub fn HealthInsights::empty() -> HealthInsights {
-  {
-    summary: "",
-    highlights: [],
-    improvements: [],
-    actionable_tips: [],
-  }
+  { summary: "", highlights: [], improvements: [], actionable_tips: [] }
 }
 
 ///|
@@ -92,7 +87,6 @@ pub fn parse_health_summary(obj : @core.Any) -> HealthSummary {
       peak: get_int(hr_zones_obj, "peak"),
     })
   }
-
   {
     date: get_str(obj, "date"),
     steps: get_int(obj, "steps"),
@@ -145,7 +139,6 @@ pub fn parse_health_insights(json : @core.Any) -> HealthInsights {
       actionable_tips.push(safe_string(item))
     }
   }
-
   { summary, highlights, improvements, actionable_tips }
 }
 
@@ -175,7 +168,6 @@ pub fn HealthInsights::to_js(self : HealthInsights) -> @core.Any {
     @core.any(tips_arr)._call("push", [@core.any(t)]) |> ignore
   }
   result._set("actionable_tips", tips_arr)
-
   result
 }
 

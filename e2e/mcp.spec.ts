@@ -21,7 +21,7 @@ if (!MCP_API_KEY) {
 }
 
 // Base URL from environment with fallback for local development
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8787';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:18787';
 
 test.describe('MCP Authentication', () => {
   test('should reject requests without API key', async () => {
