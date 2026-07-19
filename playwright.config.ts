@@ -31,7 +31,7 @@ export default defineConfig({
   ],
   // Start wrangler dev server before tests
   webServer: {
-    command: 'npm run dev',
+    command: 'pnpm run dev',
     url: 'http://localhost:18787',
     reuseExistingServer: !process.env.CI,
     timeout: 60000,

@@ -113,7 +113,7 @@ pub fn parse_health_insights(json : @core.Any) -> HealthInsights {
   // Parse highlights array
   let highlights : Array[String] = []
   let highlights_arr = json._get("highlights")
-  if not(is_null(highlights_arr)) {
+  if !is_null(highlights_arr) {
     let arr = to_array(highlights_arr)
     for item in arr {
       highlights.push(safe_string(item))
@@ -123,7 +123,7 @@ pub fn parse_health_insights(json : @core.Any) -> HealthInsights {
   // Parse improvements array
   let improvements : Array[String] = []
   let improvements_arr = json._get("improvements")
-  if not(is_null(improvements_arr)) {
+  if !is_null(improvements_arr) {
     let arr = to_array(improvements_arr)
     for item in arr {
       improvements.push(safe_string(item))
@@ -133,7 +133,7 @@ pub fn parse_health_insights(json : @core.Any) -> HealthInsights {
   // Parse actionable_tips array
   let actionable_tips : Array[String] = []
   let tips_arr = json._get("actionable_tips")
-  if not(is_null(tips_arr)) {
+  if !is_null(tips_arr) {
     let arr = to_array(tips_arr)
     for item in arr {
       actionable_tips.push(safe_string(item))

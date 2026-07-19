@@ -3,10 +3,10 @@
 /// Provides JavaScript interop functions not covered by db.mbt
 
 ///|
-/// Get environment variable from globalThis.__ENV
+/// Get an environment variable from the active Worker request context.
 pub extern "js" fn get_env(key : String) -> String =
   #| (key) => {
-  #|   const env = globalThis.__ENV;
+  #|   const env = globalThis.__FITBIT_WORKER_ENV__?.();
   #|   if (!env) return '';
   #|   return env[key] || '';
   #| }
@@ -145,6 +145,16 @@ pub fn to_array(arr : @core.Any) -> Array[@core.Any] {
     []
   } else {
     @core.array_from(arr)
+  }
+}
+
+///|
+/// Convert nullish/undefined to D1-safe null
+pub fn d1_value(value : @core.Any) -> @core.Any {
+  if @core.is_nullish(value) {
+    @core.null()
+  } else {
+    value
   }
 }
 

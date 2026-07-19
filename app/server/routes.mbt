@@ -74,7 +74,7 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
   @server_dom.ServerNode::async_(async fn() {
     let token_status = db_get_token_status()
     let is_connected = get_bool(token_status, "connected")
-    if not(is_connected) {
+    if !is_connected {
       render_empty_state()
     } else {
       let activity = db_get_latest_activity()
@@ -138,7 +138,7 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
 // =============================================================================
 
 ///|
-fn render_steps_card(activity : @core.Any) -> @luna.Node[Unit] {
+fn render_steps_card(activity : @core.Any) -> @luna.Node[Unit, String] {
   let steps = get_int(activity, "steps")
   let distance = get_float(activity, "distance")
   let goal = 10000
@@ -205,7 +205,7 @@ fn render_steps_card(activity : @core.Any) -> @luna.Node[Unit] {
 }
 
 ///|
-fn render_calories_card(activity : @core.Any) -> @luna.Node[Unit] {
+fn render_calories_card(activity : @core.Any) -> @luna.Node[Unit, String] {
   let calories = get_int(activity, "calories_out")
   let fairly_active = get_int(activity, "fairly_active_minutes")
   let very_active = get_int(activity, "very_active_minutes")
@@ -266,7 +266,7 @@ fn render_calories_card(activity : @core.Any) -> @luna.Node[Unit] {
 }
 
 ///|
-fn render_sleep_card(sleep : @core.Any) -> @luna.Node[Unit] {
+fn render_sleep_card(sleep : @core.Any) -> @luna.Node[Unit, String] {
   let duration = get_int(sleep, "duration_minutes")
   let efficiency = get_int(sleep, "efficiency")
   let hours = duration / 60
@@ -316,7 +316,7 @@ fn render_sleep_card(sleep : @core.Any) -> @luna.Node[Unit] {
 }
 
 ///|
-fn render_heartrate_card(heartrate : @core.Any) -> @luna.Node[Unit] {
+fn render_heartrate_card(heartrate : @core.Any) -> @luna.Node[Unit, String] {
   let resting = get_int(heartrate, "resting_heart_rate")
   let cardio = get_int(heartrate, "cardio_minutes")
   let hr_text = if resting > 0 { resting.to_string() } else { "--" }
@@ -352,7 +352,7 @@ fn render_heartrate_card(heartrate : @core.Any) -> @luna.Node[Unit] {
 }
 
 ///|
-fn render_weight_card(weight : @core.Any) -> @luna.Node[Unit] {
+fn render_weight_card(weight : @core.Any) -> @luna.Node[Unit, String] {
   let weight_kg = get_float(weight, "weight")
   let bmi = get_float(weight, "bmi")
   let weight_text = if weight_kg > 0.0 {
@@ -388,7 +388,7 @@ fn render_weight_card(weight : @core.Any) -> @luna.Node[Unit] {
 }
 
 ///|
-fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit] {
+fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit, String] {
   let vo2max_val = get_str(vo2max, "vo2max")
   let vo2max_text = if vo2max_val != "" { vo2max_val } else { "--" }
   let date = get_str(vo2max, "date")
@@ -429,7 +429,7 @@ fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit] {
 }
 
 ///|
-fn render_spo2_card(spo2 : @core.Any) -> @luna.Node[Unit] {
+fn render_spo2_card(spo2 : @core.Any) -> @luna.Node[Unit, String] {
   let avg = get_float(spo2, "avg")
   let min_val = get_float(spo2, "min")
   let max_val = get_float(spo2, "max")
@@ -471,14 +471,14 @@ fn render_spo2_card(spo2 : @core.Any) -> @luna.Node[Unit] {
 // =============================================================================
 
 ///|
-fn render_summary_list(summaries : @core.Any) -> @luna.Node[Unit] {
+fn render_summary_list(summaries : @core.Any) -> @luna.Node[Unit, String] {
   let len = array_len(summaries)
   if len == 0 {
     div(class="empty-state", [
       p([text("No data yet. Sync your Fitbit to see daily summaries.")]),
     ])
   } else {
-    let items : Array[@luna.Node[Unit]] = []
+    let items : Array[@luna.Node[Unit, String]] = []
     for i = 0; i < len; i = i + 1 {
       let summary = array_get(summaries, i)
       let date = get_str(summary, "date")
@@ -532,7 +532,7 @@ fn render_summary_list(summaries : @core.Any) -> @luna.Node[Unit] {
 // =============================================================================
 
 ///|
-fn render_empty_state() -> @luna.Node[Unit] {
+fn render_empty_state() -> @luna.Node[Unit, String] {
   @luna.fragment([
     header(class="dashboard-header", [
       div([

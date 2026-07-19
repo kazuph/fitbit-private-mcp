@@ -22,10 +22,9 @@ pub async fn post_daily_health_report() -> Unit {
   }
 
   // Get yesterday's summary
-  let summary_row = db
-    .prepare("SELECT * FROM daily_summary WHERE date = ?")
-    .bind1(@core.any(yesterday))
-    .first()
+  let summary_row = d1_first(db, "SELECT * FROM daily_summary WHERE date = ?", [
+    @core.any(yesterday),
+  ])
   match summary_row {
     None => {
       console_log("No summary data for: " + yesterday)
@@ -33,14 +32,12 @@ pub async fn post_daily_health_report() -> Unit {
     }
     Some(summary) => {
       // Get detailed data for Gemini analysis
-      let sleep_row = db
-        .prepare("SELECT * FROM sleep_data WHERE date = ?")
-        .bind1(@core.any(yesterday))
-        .first()
-      let heart_row = db
-        .prepare("SELECT * FROM heart_rate WHERE date = ?")
-        .bind1(@core.any(yesterday))
-        .first()
+      let sleep_row = d1_first(db, "SELECT * FROM sleep_data WHERE date = ?", [
+        @core.any(yesterday),
+      ])
+      let heart_row = d1_first(db, "SELECT * FROM heart_rate WHERE date = ?", [
+        @core.any(yesterday),
+      ])
 
       // Build health summary for Gemini (as @core.Any object)
       let health_data = build_health_data_object(
@@ -51,6 +48,12 @@ pub async fn post_daily_health_report() -> Unit {
       let insights = analyze_health_data(health_data)
       if is_null(insights) {
         console_log("Failed to generate insights for: " + yesterday)
+        // Fallback: post basic summary so cron still produces a report
+        let fallback_posted = post_basic_summary_to_slack(summary, yesterday)
+        if fallback_posted {
+          set_sync_state(state_key, yesterday)
+          console_log("Fallback daily summary posted for: " + yesterday)
+        }
       } else {
         // Post to Slack
         let posted = post_health_insights_to_slack(insights, yesterday)
@@ -62,6 +65,37 @@ pub async fn post_daily_health_report() -> Unit {
       }
     }
   }
+}
+
+///|
+/// Post a basic summary to Slack when Gemini is unavailable
+async fn post_basic_summary_to_slack(
+  summary : @core.Any,
+  date : String,
+) -> Bool {
+  let steps = get_int(summary, "steps")
+  let calories = get_int(summary, "calories")
+  let distance = get_float(summary, "distance")
+  let active_minutes = get_int(summary, "active_minutes")
+  let sleep_minutes = get_int(summary, "sleep_duration_minutes")
+  let resting_hr = get_int(summary, "resting_heart_rate")
+  let weight = get_float(summary, "weight")
+
+  let mut text = "@kazuph :runner: *Fitbit 日次サマリー (簡易)*\n_" +
+    date +
+    "_\n\n"
+  text = text + "• 歩数: " + steps.to_string() + "\n"
+  text = text + "• 消費カロリー: " + calories.to_string() + "\n"
+  text = text + "• 距離: " + distance.to_string() + " km\n"
+  text = text + "• 活動分: " + active_minutes.to_string() + "\n"
+  text = text + "• 睡眠: " + sleep_minutes.to_string() + " 分\n"
+  if resting_hr > 0 {
+    text = text + "• 安静時心拍: " + resting_hr.to_string() + "\n"
+  }
+  if weight > 0.0 {
+    text = text + "• 体重: " + weight.to_string() + " kg\n"
+  }
+  post_to_slack(text)
 }
 
 ///|

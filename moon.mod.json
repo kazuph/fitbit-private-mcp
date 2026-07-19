@@ -2,19 +2,23 @@
   "name": "kazuph/fitbit_health",
   "version": "0.1.0",
   "deps": {
-    "mizchi/luna": "0.4.1",
-    "mizchi/js": "0.10.7",
-    "mizchi/cloudflare": "0.1.1"
+    "moonbitlang/async": "0.19.0",
+    "mizchi/luna": "0.22.1",
+    "mizchi/sol": "0.22.2",
+    "mizchi/sol_adapter_cloudflare": "0.22.2",
+    "mizchi/mars": "0.3.10",
+    "mizchi/js": "0.10.16",
+    "mizchi/cloudflare": "0.1.9"
   },
   "readme": "README.md",
-  "repository": "",
+  "repository": "https://github.com/kazuph/fitbit-private-mcp",
   "license": "MIT",
   "keywords": [
     "fitbit",
     "health",
-    "luna-ui",
-    "cloudflare-workers",
-    "mcp"
+    "dashboard",
+    "mcp",
+    "cloudflare-workers"
   ],
   "description": "Private Fitbit health dashboard with MCP endpoint",
   "source": "app",

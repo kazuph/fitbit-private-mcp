@@ -7,20 +7,24 @@ pre-commit:
     moon-fmt:
       glob: "*.mbt"
       exclude: "app/__gen__/**"
-      run: moon fmt --check
+      run: moon fmt --check app/client/*.mbt app/server/*.mbt
       fail_text: "MoonBit formatting check failed. Run 'moon fmt' to fix."
 
     moon-check:
       glob: "*.mbt"
       exclude: "app/__gen__/**"
-      run: moon check
+      run: moon check --target js
       fail_text: "MoonBit check failed. Please fix the errors above."
 
 pre-push:
   parallel: false
   commands:
+    secretlint:
+      run: pnpm run lint:secretlint
+      fail_text: "Secret scan failed. Remove credentials before pushing."
+
     moon-check:
       glob: "*.mbt"
       exclude: "app/__gen__/**"
-      run: moon check
+      run: moon check --target js
       fail_text: "MoonBit check failed. Please fix the errors before pushing."

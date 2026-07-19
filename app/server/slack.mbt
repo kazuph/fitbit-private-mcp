@@ -42,7 +42,7 @@ pub async fn post_to_slack(text : String) -> Bool {
       headers={ "Content-Type": "application/x-www-form-urlencoded" },
       body=@core.any(params.to_string()),
     )
-    if not(response.ok) {
+    if !response.ok {
       @console.error(
         @core.any("Slack API error: " + response.status.to_string()),
       )
@@ -50,7 +50,7 @@ pub async fn post_to_slack(text : String) -> Bool {
     } else {
       let result = response.json()
       let ok = result._get("ok")
-      if is_null(ok) || not(safe_bool(ok)) {
+      if is_null(ok) || !safe_bool(ok) {
         let error_msg = result._get("error")
         let error_str = if is_null(error_msg) {
           "unknown error"
@@ -120,7 +120,7 @@ pub async fn post_health_insights_to_slack(
 ) -> Bool {
   // Parse insights from JS object
   let insights = parse_health_insights(insights_js)
-  if not(insights.has_content()) {
+  if !insights.has_content() {
     @console.info(@core.any("No health insights to post"))
     false
   } else {

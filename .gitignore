@@ -5,6 +5,7 @@ node_modules/
 
 # Build outputs
 _build
+dist/
 target
 .sol/
 app/__gen__/
@@ -34,3 +35,4 @@ Thumbs.db
 test-results/
 playwright-report/
 *.report.html
+.yunomi/

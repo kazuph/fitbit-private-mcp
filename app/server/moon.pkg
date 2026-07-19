@@ -1,20 +1,24 @@
-{
-  "supported-targets": ["js"],
-  "import": [
-    { "path": "mizchi/luna/luna", "alias": "luna" },
-    { "path": "mizchi/luna/sol/router", "alias": "router" },
-    { "path": "mizchi/luna/sol/middleware", "alias": "mw" },
-    { "path": "mizchi/luna/sol/action", "alias": "action" },
-    { "path": "mizchi/luna/luna/static_dom", "alias": "server_dom" },
-    { "path": "mizchi/luna/luna/static_dom/element", "alias": "element" },
-    { "path": "mizchi/js/core", "alias": "core" },
-    { "path": "mizchi/js/builtins/global", "alias": "global" },
-    { "path": "mizchi/cloudflare", "alias": "cloudflare" },
-    { "path": "mizchi/js/web/http", "alias": "http" },
-    { "path": "mizchi/js/web/console", "alias": "console" },
-    { "path": "mizchi/js/web/url", "alias": "url" }
-  ],
-  "link": {
+supported_targets = "js"
+
+import {
+  "mizchi/luna",
+  "mizchi/sol/router",
+  "mizchi/sol/middleware" @mw,
+  "mizchi/sol/action",
+  "mizchi/luna/dom/static" @server_dom,
+  "mizchi/js/core",
+  "mizchi/js/builtins/global",
+  "mizchi/cloudflare",
+  "mizchi/js/web/http",
+  "mizchi/js/web/console",
+  "mizchi/js/web/url",
+  "moonbitlang/core/json",
+}
+
+warnings = "-35-67-24"
+
+options(
+  link: {
     "js": {
       "exports": [
         "analyze_health_data",
@@ -46,10 +50,9 @@
         "get_sync_state",
         "set_sync_state",
         "get_yesterday_jst",
-        "post_daily_health_report"
+        "post_daily_health_report",
       ],
-      "format": "esm"
-    }
+      "format": "esm",
+    },
   },
-  "warn-list": "-35-67-24"
-}
+)

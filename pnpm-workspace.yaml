@@ -1,0 +1,11 @@
+packages:
+  - "."
+
+# Global policy: do not resolve packages published in the last seven days.
+minimumReleaseAge: 10080
+
+onlyBuiltDependencies:
+  - esbuild
+  - protobufjs
+  - sharp
+  - workerd

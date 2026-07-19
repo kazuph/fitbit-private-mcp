@@ -20,7 +20,7 @@ pub async fn fetch_activity_data(
   let response = @http.fetch(url, method_="GET", headers={
     "Authorization": "Bearer " + access_token,
   })
-  if not(response.ok) {
+  if !response.ok {
     @console.error(
       @core.any("Fitbit activity API error: " + response.status.to_string()),
     )
@@ -40,7 +40,7 @@ pub async fn fetch_sleep_data(
   let response = @http.fetch(url, method_="GET", headers={
     "Authorization": "Bearer " + access_token,
   })
-  if not(response.ok) {
+  if !response.ok {
     @console.error(
       @core.any("Fitbit sleep API error: " + response.status.to_string()),
     )
@@ -63,7 +63,7 @@ pub async fn fetch_heart_data(
   let response = @http.fetch(url, method_="GET", headers={
     "Authorization": "Bearer " + access_token,
   })
-  if not(response.ok) {
+  if !response.ok {
     @console.error(
       @core.any("Fitbit heart rate API error: " + response.status.to_string()),
     )
@@ -86,7 +86,7 @@ pub async fn fetch_weight_data(
   let response = @http.fetch(url, method_="GET", headers={
     "Authorization": "Bearer " + access_token,
   })
-  if not(response.ok) {
+  if !response.ok {
     @console.error(
       @core.any("Fitbit weight API error: " + response.status.to_string()),
     )
@@ -106,7 +106,7 @@ pub async fn fetch_vo2max_data(
   let response = @http.fetch(url, method_="GET", headers={
     "Authorization": "Bearer " + access_token,
   })
-  if not(response.ok) {
+  if !response.ok {
     @console.error(
       @core.any("Fitbit VO2max API error: " + response.status.to_string()),
     )
@@ -123,7 +123,7 @@ pub async fn fetch_spo2_data(access_token : String, date : String) -> @core.Any 
   let response = @http.fetch(url, method_="GET", headers={
     "Authorization": "Bearer " + access_token,
   })
-  if not(response.ok) {
+  if !response.ok {
     @console.error(
       @core.any("Fitbit SpO2 API error: " + response.status.to_string()),
     )
@@ -155,7 +155,7 @@ pub async fn refresh_oauth_token(refresh_token : String) -> @core.Any {
       },
       body=@core.any(params.to_string()),
     )
-    if not(response.ok) {
+    if !response.ok {
       let error_text = response.text()
       @console.error(@core.any("Token refresh failed: " + error_text))
       @core.null()
@@ -191,7 +191,7 @@ pub async fn exchange_auth_code(
       },
       body=@core.any(params.to_string()),
     )
-    if not(response.ok) {
+    if !response.ok {
       let error_text = response.text()
       @console.error(@core.any("Token exchange failed: " + error_text))
       @core.null()
@@ -232,7 +232,7 @@ pub fn parse_activity_data(data : @core.Any) -> @core.Any {
 
       // Extract total distance
       let distances = summary._get("distances")
-      if not(is_null(distances)) {
+      if !is_null(distances) {
         let arr = to_array(distances)
         for d in arr {
           let activity = safe_string(d._get("activity"))
@@ -270,9 +270,9 @@ pub fn parse_sleep_data(data : @core.Any) -> @core.Any {
 
         // Parse stages from summary
         let summary = data._get("summary")
-        if not(is_null(summary)) {
+        if !is_null(summary) {
           let stages = summary._get("stages")
-          if not(is_null(stages)) {
+          if !is_null(stages) {
             result._set("deep", stages._get("deep"))
             result._set("light", stages._get("light"))
             result._set("rem", stages._get("rem"))
@@ -308,7 +308,7 @@ pub fn parse_heart_data(data : @core.Any) -> @core.Any {
 
           // Parse heart rate zones
           let zones = hr_value._get("heartRateZones")
-          if not(is_null(zones)) {
+          if !is_null(zones) {
             let zones_arr = to_array(zones)
             for z in zones_arr {
               let name = safe_string(z._get("name"))

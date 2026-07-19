@@ -1,6 +1,6 @@
 ///|
 /// Server-side element DSL imports
-using @element {
+using @server_dom {
   a,
   article,
   button,
@@ -22,10 +22,10 @@ pub fn header(
   id? : String,
   class? : String,
   style? : String,
-  attrs? : Array[(String, @luna.Attr[Unit])],
-  children : Array[@luna.Node[Unit]],
-) -> @luna.Node[Unit] {
-  @element.header_(id?, class?, style?, attrs?, children)
+  attrs? : Array[(String, @luna.Attr[Unit, String])],
+  children : Array[@luna.Node[Unit, String]],
+) -> @luna.Node[Unit, String] {
+  @server_dom.header_(id?, class?, style?, attrs?, children)
 }
 
 ///|
@@ -34,8 +34,8 @@ pub fn main_el(
   id? : String,
   class? : String,
   style? : String,
-  attrs? : Array[(String, @luna.Attr[Unit])],
-  children : Array[@luna.Node[Unit]],
-) -> @luna.Node[Unit] {
-  @element.main_(id?, class?, style?, attrs?, children)
+  attrs? : Array[(String, @luna.Attr[Unit, String])],
+  children : Array[@luna.Node[Unit, String]],
+) -> @luna.Node[Unit, String] {
+  @server_dom.main_(id?, class?, style?, attrs?, children)
 }

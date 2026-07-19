@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 // Cloudflare Workers向けパッチスクリプト
 // MoonBit生成コードのグローバルスコープ制限を回避する
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(__dirname, '..');
+import { readFileSync, writeFileSync } from 'fs';
 
 const file = process.argv[2];
 if (!file) {
@@ -17,15 +12,42 @@ if (!file) {
 let content = readFileSync(file, 'utf-8');
 let patched = false;
 
-// 1. random_seed をコメントアウトして固定値に置換
-const seedLine = 'const moonbitlang$core$builtin$$seed = moonbitlang$core$builtin$$random_seed();';
-if (content.includes(seedLine)) {
-  content = content.replace(
-    seedLine,
-    '// ' + seedLine + '\nconst moonbitlang$core$builtin$$seed = 123456789;'
-  );
-  patched = true;
-  console.log('  Patched: random_seed() -> fixed value');
+// 1. Workersがmodule初期化時に拒否するrandom seed生成を固定値へ置換する。
+let seedHandled = false;
+const seedPatterns = [
+  {
+    search: 'const _M0FPB4seed = _M0FPB12random__seed();',
+    replace: 'const _M0FPB4seed = 0; /* Workers disallow crypto during module initialization */'
+  },
+  {
+    search: 'const moonbitlang$core$builtin$seed = moonbitlang$core$builtin$random_seed();',
+    replace: '// Patched for Cloudflare Workers (no global crypto)\nconst moonbitlang$core$builtin$seed = 123456789;\nconst moonbitlang$core$builtin$$$$seed = moonbitlang$core$builtin$seed; // alias for double$$ reference'
+  },
+  {
+    search: 'const moonbitlang$core$builtin$$seed = moonbitlang$core$builtin$$random_seed();',
+    replace: '// Patched for Cloudflare Workers (no global crypto)\nconst moonbitlang$core$builtin$$$$seed = 123456789;'
+  }
+];
+
+for (const { search, replace } of seedPatterns) {
+  if (content.includes(search)) {
+    content = content.replace(search, replace);
+    patched = true;
+    seedHandled = true;
+    console.log('  Patched: random seed initialization -> fixed value');
+    break;
+  }
+}
+
+if (
+  content.includes('Workers disallow crypto during module initialization') ||
+  content.includes('Patched for Cloudflare Workers (no global crypto)')
+) {
+  seedHandled = true;
+}
+
+if (!seedHandled) {
+  throw new Error(`random seed pattern not found in ${file}; update the Cloudflare patch before building`);
 }
 
 // 2. run() の即時実行を削除
@@ -56,38 +78,4 @@ if (patched) {
   console.log(`Patched: ${file}`);
 } else {
   console.log(`No patches needed: ${file}`);
-}
-
-// =============================================================================
-// Patch .sol/prod/server/main.js for D1 binding
-// =============================================================================
-const solServerMainPath = join(projectRoot, '.sol/prod/server/main.js');
-if (existsSync(solServerMainPath)) {
-  let solContent = readFileSync(solServerMainPath, 'utf-8');
-
-  if (!solContent.includes('globalThis.__D1_DB')) {
-    const exportPattern = /^export default app;$/m;
-    if (exportPattern.test(solContent)) {
-      solContent = solContent.replace(
-        exportPattern,
-        `export default {
-  fetch: async (request, env, ctx) => {
-    globalThis.__D1_DB = env.DB;
-    const response = await app.fetch(request, env, ctx);
-    const url = new URL(request.url);
-    if (url.pathname.endsWith('.js') && response.headers.get('content-type')?.includes('text/plain')) {
-      const headers = new Headers(response.headers);
-      headers.set('content-type', 'application/javascript');
-      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-    }
-    return response;
-  }
-};`
-      );
-      writeFileSync(solServerMainPath, solContent);
-      console.log(`Patched: ${solServerMainPath}`);
-    }
-  } else {
-    console.log(`Already patched: ${solServerMainPath}`);
-  }
 }

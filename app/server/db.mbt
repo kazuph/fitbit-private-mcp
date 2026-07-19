@@ -7,10 +7,10 @@
 // =============================================================================
 
 ///|
-/// Get D1 database from globalThis (only FFI needed)
+/// Get D1 database from the active Worker request context.
 extern "js" fn get_global_db() -> @core.Any =
   #| () => {
-  #|   const db = globalThis.__D1_DB;
+  #|   const db = globalThis.__FITBIT_D1_DB__?.();
   #|   if (!db) throw new Error('D1 database not initialized');
   #|   return db;
   #| }
@@ -22,6 +22,98 @@ fn get_db() -> @cloudflare.D1Database {
   @core.identity(db_js)
 }
 
+///|
+extern "js" fn d1_run_error_js(
+  db : @core.Any,
+  query : String,
+  params : Array[@core.Any],
+) -> @core.Promise[String] =
+  #| async (db, query, params) => {
+  #|   try {
+  #|     const result = await db.prepare(query).bind(...params).run();
+  #|     if (!result.success) console.error('[d1] write failed:', result.error);
+  #|     return result.success ? '' : String(result.error || 'Unknown D1 error');
+  #|   } catch (error) {
+  #|     console.error('[d1] write failed:', error instanceof Error ? error.message : String(error));
+  #|     return error instanceof Error ? error.message : String(error);
+  #|   }
+  #| }
+
+///|
+pub async fn d1_run(
+  db : @cloudflare.D1Database,
+  query : String,
+  params : Array[@core.Any],
+) -> Unit {
+  let message = d1_run_error_js(db.as_any(), query, params).wait()
+  if message != "" {
+    @console.error(@core.any("D1 write failed: " + message))
+    raise Failure::Failure("D1 write failed: " + message)
+  }
+}
+
+///|
+extern "js" fn d1_first_js(
+  db : @core.Any,
+  query : String,
+  params : Array[@core.Any],
+) -> @core.Promise[Array[@core.Any]] =
+  #| async (db, query, params) => {
+  #|   try {
+  #|     return ['', await db.prepare(query).bind(...params).first()];
+  #|   } catch (error) {
+  #|     return [error instanceof Error ? error.message : String(error), null];
+  #|   }
+  #| }
+
+///|
+pub async fn d1_first(
+  db : @cloudflare.D1Database,
+  query : String,
+  params : Array[@core.Any],
+) -> @core.Any? {
+  let result = d1_first_js(db.as_any(), query, params).wait()
+  let message : String = result[0].cast()
+  if message != "" {
+    raise Failure::Failure("D1 read failed: " + message)
+  }
+  let row = result[1]
+  if @core.is_nullish(row) {
+    None
+  } else {
+    Some(row)
+  }
+}
+
+///|
+extern "js" fn d1_all_js(
+  db : @core.Any,
+  query : String,
+  params : Array[@core.Any],
+) -> @core.Promise[Array[@core.Any]] =
+  #| async (db, query, params) => {
+  #|   try {
+  #|     const result = await db.prepare(query).bind(...params).all();
+  #|     return ['', result.results];
+  #|   } catch (error) {
+  #|     return [error instanceof Error ? error.message : String(error), null];
+  #|   }
+  #| }
+
+///|
+pub async fn d1_all(
+  db : @cloudflare.D1Database,
+  query : String,
+  params : Array[@core.Any],
+) -> @core.Any {
+  let result = d1_all_js(db.as_any(), query, params).wait()
+  let message : String = result[0].cast()
+  if message != "" {
+    raise Failure::Failure("D1 read failed: " + message)
+  }
+  result[1]
+}
+
 // =============================================================================
 // D1 Database Access Functions (MoonBit Native)
 // =============================================================================
@@ -30,10 +122,9 @@ fn get_db() -> @cloudflare.D1Database {
 /// Get OAuth token for user
 pub async fn db_get_oauth_token(user_id : String) -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM oauth_tokens WHERE user_id = ?")
-    .bind1(@core.any(user_id))
-    .first()
+  let row = d1_first(db, "SELECT * FROM oauth_tokens WHERE user_id = ?", [
+    @core.any(user_id),
+  ])
   match row {
     Some(r) => r
     None => @core.null()
@@ -44,9 +135,11 @@ pub async fn db_get_oauth_token(user_id : String) -> @core.Any {
 /// Check if user is authenticated
 pub async fn db_is_authenticated() -> Bool {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM oauth_tokens WHERE user_id = 'default'")
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT * FROM oauth_tokens WHERE user_id = 'default'",
+    [],
+  )
   match row {
     Some(_) => true
     None => false
@@ -57,11 +150,9 @@ pub async fn db_is_authenticated() -> Bool {
 /// Get daily summaries for dashboard
 pub async fn db_get_daily_summaries(limit : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM daily_summary ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(limit))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM daily_summary ORDER BY date DESC LIMIT ?", [
+    @core.any(limit),
+  ])
 }
 
 ///|
@@ -69,10 +160,9 @@ pub async fn db_get_daily_summaries(limit : Int) -> @core.Any {
 pub async fn db_get_today_summary() -> @core.Any {
   let db = get_db()
   let today = get_today_str()
-  let row = db
-    .prepare("SELECT * FROM daily_summary WHERE date = ?")
-    .bind1(@core.any(today))
-    .first()
+  let row = d1_first(db, "SELECT * FROM daily_summary WHERE date = ?", [
+    @core.any(today),
+  ])
   match row {
     Some(r) => r
     None => @core.null()
@@ -83,9 +173,11 @@ pub async fn db_get_today_summary() -> @core.Any {
 /// Get latest activity data
 pub async fn db_get_latest_activity() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM daily_activity ORDER BY date DESC LIMIT 1")
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT * FROM daily_activity ORDER BY date DESC LIMIT 1",
+    [],
+  )
   match row {
     Some(r) => r
     None => @core.null()
@@ -96,9 +188,11 @@ pub async fn db_get_latest_activity() -> @core.Any {
 /// Get latest sleep data
 pub async fn db_get_latest_sleep() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM sleep_data ORDER BY date DESC LIMIT 1")
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT * FROM sleep_data ORDER BY date DESC LIMIT 1",
+    [],
+  )
   match row {
     Some(r) => r
     None => @core.null()
@@ -109,9 +203,11 @@ pub async fn db_get_latest_sleep() -> @core.Any {
 /// Get latest heart rate data
 pub async fn db_get_latest_heartrate() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM heart_rate ORDER BY date DESC LIMIT 1")
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT * FROM heart_rate ORDER BY date DESC LIMIT 1",
+    [],
+  )
   match row {
     Some(r) => r
     None => @core.null()
@@ -122,9 +218,11 @@ pub async fn db_get_latest_heartrate() -> @core.Any {
 /// Get latest weight data
 pub async fn db_get_latest_weight() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM weight_data ORDER BY date DESC LIMIT 1")
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT * FROM weight_data ORDER BY date DESC LIMIT 1",
+    [],
+  )
   match row {
     Some(r) => r
     None => @core.null()
@@ -135,9 +233,11 @@ pub async fn db_get_latest_weight() -> @core.Any {
 /// Get latest VO2max data
 pub async fn db_get_latest_vo2max() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM vo2max_data ORDER BY date DESC LIMIT 1")
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT * FROM vo2max_data ORDER BY date DESC LIMIT 1",
+    [],
+  )
   match row {
     Some(r) => r
     None => @core.null()
@@ -148,9 +248,7 @@ pub async fn db_get_latest_vo2max() -> @core.Any {
 /// Get latest SpO2 data
 pub async fn db_get_latest_spo2() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare("SELECT * FROM spo2_data ORDER BY date DESC LIMIT 1")
-    .first()
+  let row = d1_first(db, "SELECT * FROM spo2_data ORDER BY date DESC LIMIT 1", [])
   match row {
     Some(r) => r
     None => @core.null()
@@ -161,11 +259,11 @@ pub async fn db_get_latest_spo2() -> @core.Any {
 /// Get OAuth token expiry status
 pub async fn db_get_token_status() -> @core.Any {
   let db = get_db()
-  let row = db
-    .prepare(
-      "SELECT expires_at, updated_at FROM oauth_tokens WHERE user_id = 'default'",
-    )
-    .first()
+  let row = d1_first(
+    db,
+    "SELECT expires_at, updated_at FROM oauth_tokens WHERE user_id = 'default'",
+    [],
+  )
   match row {
     None => {
       let result = @core.new_object()

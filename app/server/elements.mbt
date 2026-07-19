@@ -8,7 +8,7 @@
 
 ///|
 /// Create a static attribute
-fn static_attr(value : String) -> @luna.Attr[Unit] {
+fn static_attr(value : String) -> @luna.Attr[Unit, String] {
   @luna.attr_static(value)
 }
 
@@ -18,9 +18,9 @@ fn build_attrs(
   id : String?,
   class : String?,
   style : String?,
-  attrs : Array[(String, @luna.Attr[Unit])]?,
-) -> Array[(String, @luna.Attr[Unit])] {
-  let result : Array[(String, @luna.Attr[Unit])] = []
+  attrs : Array[(String, @luna.Attr[Unit, String])]?,
+) -> Array[(String, @luna.Attr[Unit, String])] {
+  let result : Array[(String, @luna.Attr[Unit, String])] = []
   if id is Some(v) {
     result.push(("id", static_attr(v)))
   }
@@ -49,9 +49,9 @@ pub fn time(
   id? : String,
   class? : String,
   style? : String,
-  attrs? : Array[(String, @luna.Attr[Unit])],
-  children : Array[@luna.Node[Unit]],
-) -> @luna.Node[Unit] {
+  attrs? : Array[(String, @luna.Attr[Unit, String])],
+  children : Array[@luna.Node[Unit, String]],
+) -> @luna.Node[Unit, String] {
   let props = build_attrs(id, class, style, attrs)
   if datetime is Some(v) {
     props.push(("datetime", static_attr(v)))
@@ -69,7 +69,7 @@ pub fn progress_bar(
   value : Int,
   max : Int,
   class? : String,
-) -> @luna.Node[Unit] {
+) -> @luna.Node[Unit, String] {
   let width_percent = if max > 0 { value * 100 / max } else { 0 }
   let bar_style = "width: " + width_percent.to_string() + "%"
   div(class=class.unwrap_or("progress-ring"), [

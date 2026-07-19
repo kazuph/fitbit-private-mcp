@@ -1,8 +1,12 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "fitbit-private-mcp",
   "main": "src/worker.ts",
-  "compatibility_date": "2024-12-01",
+  "compatibility_date": "2026-07-09",
   "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
   "assets": {
     "directory": "./static"
   },
@@ -10,7 +14,8 @@
     {
       "binding": "DB",
       "database_name": "fitbit-health-db",
-      "database_id": "20a7ca13-908b-46f2-9b30-ee4d919b521c"
+      "database_id": "20a7ca13-908b-46f2-9b30-ee4d919b521c",
+      "migrations_dir": "migrations"
     }
   ],
   "vars": {

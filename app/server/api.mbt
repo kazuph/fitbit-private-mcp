@@ -10,77 +10,63 @@
 /// Get daily summaries for health endpoint
 pub async fn mcp_get_health_summaries(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM daily_summary ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM daily_summary ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 ///|
 /// Get activity data for MCP
 pub async fn mcp_get_activity(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM daily_activity ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM daily_activity ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 ///|
 /// Get sleep data for MCP
 pub async fn mcp_get_sleep(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM sleep_data ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM sleep_data ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 ///|
 /// Get heart rate data for MCP
 pub async fn mcp_get_heartrate(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM heart_rate ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM heart_rate ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 ///|
 /// Get weight data for MCP
 pub async fn mcp_get_weight(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM weight_data ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM weight_data ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 ///|
 /// Get VO2max data for MCP
 pub async fn mcp_get_vo2max(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM vo2max_data ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM vo2max_data ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 ///|
 /// Get SpO2 data for MCP
 pub async fn mcp_get_spo2(days : Int) -> @core.Any {
   let db = get_db()
-  let result = db
-    .prepare("SELECT * FROM spo2_data ORDER BY date DESC LIMIT ?")
-    .bind1(@core.any(days))
-    .all()
-  result.results_raw()
+  d1_all(db, "SELECT * FROM spo2_data ORDER BY date DESC LIMIT ?", [
+    @core.any(days),
+  ])
 }
 
 // =============================================================================
@@ -109,23 +95,134 @@ pub fn parse_days_param(props : @router.PageProps, default_days : Int) -> Int {
 /// Build JSON response for MCP endpoints - MoonBit native
 pub fn build_mcp_response(
   success : Bool,
+  data_key : String,
   data : @core.Any,
   days : Int,
   end_date : String,
-) -> @core.Any {
+) -> Json raise {
   let period = @core.new_object()
   period._set("days", @core.any(days))
   period._set("end_date", @core.any(end_date))
+  let response_data = @core.new_object()
+  response_data._set(data_key, data)
+  response_data._set("period", period)
   let result = @core.new_object()
   result._set("success", @core.any(success))
-  result._set("data", data)
-  result._set("period", period)
-  result
+  result._set("data", response_data)
+  @json.parse(json_stringify(result).view())
+}
+
+///|
+/// Get the current UTC hour for the scheduled daily report.
+extern "js" fn get_utc_hour() -> Int =
+  #| () => new Date().getUTCHours()
+
+///|
+/// Run Fitbit synchronization from inside Sol's MoonBit async runtime.
+async fn sync_today() -> (Bool, String?) {
+  let (token, error) = get_valid_access_token("default")
+  match token {
+    None => (false, error)
+    Some(access_token) => {
+      let date = get_today_date()
+      let (vo2max, spo2) = sync_health_data(access_token, date)
+      update_daily_summary(date, vo2max, spo2)
+      (true, None)
+    }
+  }
+}
+
+///|
+/// Internal endpoint for the dashboard's manual synchronization action.
+async fn internal_sync_handler(_props : @router.PageProps) -> Json {
+  let (synced, error) = sync_today()
+  let result = @core.new_object()
+  result._set("success", @core.any(synced))
+  result._set("date", @core.any(get_today_date()))
+  match error {
+    Some(message) => result._set("error", @core.any(message))
+    None => ()
+  }
+  @json.parse(json_stringify(result).view())
+}
+
+///|
+/// Internal endpoint that exchanges an OAuth code and persists the token in D1.
+async fn internal_oauth_handler(props : @router.PageProps) -> Json {
+  let result = @core.new_object()
+  match props.get_query("code") {
+    None => {
+      result._set("success", @core.any(false))
+      result._set("error", @core.any("Missing authorization code"))
+    }
+    Some(code) => {
+      let tokens = exchange_auth_code(code, get_env("FITBIT_REDIRECT_URI"))
+      if is_null(tokens) {
+        result._set("success", @core.any(false))
+        result._set("error", @core.any("Token exchange failed"))
+      } else {
+        save_oauth_token(
+          "default",
+          safe_string(tokens._get("access_token")),
+          safe_string(tokens._get("refresh_token")),
+          calculate_expiry(safe_int(tokens._get("expires_in"))),
+          safe_string(tokens._get("scope")),
+        )
+        result._set("success", @core.any(true))
+      }
+    }
+  }
+  @json.parse(json_stringify(result).view())
+}
+
+///|
+/// Internal endpoint for the dashboard's Slack connectivity check.
+async fn internal_test_slack_handler(_props : @router.PageProps) -> Json {
+  let result = @core.new_object()
+  result._set("success", @core.any(post_to_slack("🧪 Slack test")))
+  @json.parse(json_stringify(result).view())
+}
+
+///|
+/// Internal endpoint for manually sending the daily health report.
+async fn internal_test_report_handler(_props : @router.PageProps) -> Json {
+  post_daily_health_report()
+  let result = @core.new_object()
+  result._set("success", @core.any(true))
+  @json.parse(json_stringify(result).view())
+}
+
+///|
+/// Internal endpoint for reporting Worker orchestration failures to Slack.
+async fn internal_error_handler(props : @router.PageProps) -> Json {
+  let message = match props.get_query("message") {
+    Some(value) => value
+    None => "Unknown Worker error"
+  }
+  let context = props.get_query("context")
+  let result = @core.new_object()
+  result._set("success", @core.any(post_error_to_slack(message, context)))
+  @json.parse(json_stringify(result).view())
+}
+
+///|
+/// Internal cron endpoint used by both manual and scheduled Worker handlers.
+async fn internal_cron_handler(_props : @router.PageProps) -> Json {
+  let (synced, _) = sync_today()
+  let report_queued = get_utc_hour() == 22
+  if report_queued {
+    post_daily_health_report()
+  }
+  let result = @core.new_object()
+  result._set("success", @core.any(true))
+  result._set("synced", @core.any(synced))
+  result._set("reportQueued", @core.any(report_queued))
+  @json.parse(json_stringify(result).view())
 }
 
 ///|
 /// Build MCP tools list response - MoonBit native
-pub fn build_tools_response() -> @core.Any {
+pub fn build_tools_response() -> Json raise {
   let tools = @core.new_array()
 
   // Tool 1: get_health_summary
@@ -279,7 +376,7 @@ pub fn build_tools_response() -> @core.Any {
   @core.any(tools)._call("push", [tool7]) |> ignore
   let result = @core.new_object()
   result._set("tools", @core.any(tools))
-  result
+  @json.parse(json_stringify(result).view())
 }
 
 // =============================================================================
@@ -288,71 +385,71 @@ pub fn build_tools_response() -> @core.Any {
 
 ///|
 /// GET /mcp/tools - List available MCP tools
-pub async fn mcp_tools_handler(_props : @router.PageProps) -> @core.Any {
+pub async fn mcp_tools_handler(_props : @router.PageProps) -> Json {
   build_tools_response()
 }
 
 ///|
 /// GET /mcp/health - Get health summary data
-pub async fn mcp_health_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_health_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let summaries = mcp_get_health_summaries(days)
   let end_date = get_today_date()
-  build_mcp_response(true, summaries, days, end_date)
+  build_mcp_response(true, "summaries", summaries, days, end_date)
 }
 
 ///|
 /// GET /mcp/activity - Get activity data
-pub async fn mcp_activity_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_activity_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let activities = mcp_get_activity(days)
   let end_date = get_today_date()
-  build_mcp_response(true, activities, days, end_date)
+  build_mcp_response(true, "activities", activities, days, end_date)
 }
 
 ///|
 /// GET /mcp/sleep - Get sleep data
-pub async fn mcp_sleep_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_sleep_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let sleep_data = mcp_get_sleep(days)
   let end_date = get_today_date()
-  build_mcp_response(true, sleep_data, days, end_date)
+  build_mcp_response(true, "sleep_data", sleep_data, days, end_date)
 }
 
 ///|
 /// GET /mcp/heartrate - Get heart rate data
-pub async fn mcp_heartrate_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_heartrate_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let heart_rate_data = mcp_get_heartrate(days)
   let end_date = get_today_date()
-  build_mcp_response(true, heart_rate_data, days, end_date)
+  build_mcp_response(true, "heart_rate_data", heart_rate_data, days, end_date)
 }
 
 ///|
 /// GET /mcp/weight - Get weight data
-pub async fn mcp_weight_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_weight_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 30) // Default 30 days for weight
   let weight_data = mcp_get_weight(days)
   let end_date = get_today_date()
-  build_mcp_response(true, weight_data, days, end_date)
+  build_mcp_response(true, "weight_data", weight_data, days, end_date)
 }
 
 ///|
 /// GET /mcp/vo2max - Get VO2max (cardio fitness) data
-pub async fn mcp_vo2max_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_vo2max_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 30) // Default 30 days for VO2max
   let vo2max_data = mcp_get_vo2max(days)
   let end_date = get_today_date()
-  build_mcp_response(true, vo2max_data, days, end_date)
+  build_mcp_response(true, "vo2max_data", vo2max_data, days, end_date)
 }
 
 ///|
 /// GET /mcp/spo2 - Get SpO2 (blood oxygen) data
-pub async fn mcp_spo2_handler(props : @router.PageProps) -> @core.Any {
+pub async fn mcp_spo2_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7) // Default 7 days for SpO2
   let spo2_data = mcp_get_spo2(days)
   let end_date = get_today_date()
-  build_mcp_response(true, spo2_data, days, end_date)
+  build_mcp_response(true, "spo2_data", spo2_data, days, end_date)
 }
 
 // =============================================================================
@@ -363,6 +460,30 @@ pub async fn mcp_spo2_handler(props : @router.PageProps) -> @core.Any {
 /// MCP API routes (to be included in routes())
 pub fn mcp_routes() -> Array[@router.SolRoutes] {
   [
+    @router.SolRoutes::Post(
+      path="/__internal/sync",
+      handler=@router.ApiHandler(internal_sync_handler),
+    ),
+    @router.SolRoutes::Post(
+      path="/__internal/oauth",
+      handler=@router.ApiHandler(internal_oauth_handler),
+    ),
+    @router.SolRoutes::Post(
+      path="/__internal/test-slack",
+      handler=@router.ApiHandler(internal_test_slack_handler),
+    ),
+    @router.SolRoutes::Post(
+      path="/__internal/test-report",
+      handler=@router.ApiHandler(internal_test_report_handler),
+    ),
+    @router.SolRoutes::Post(
+      path="/__internal/error",
+      handler=@router.ApiHandler(internal_error_handler),
+    ),
+    @router.SolRoutes::Post(
+      path="/__internal/cron",
+      handler=@router.ApiHandler(internal_cron_handler),
+    ),
     @router.SolRoutes::Get(
       path="/mcp/tools",
       handler=@router.ApiHandler(mcp_tools_handler),

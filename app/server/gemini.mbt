@@ -185,7 +185,7 @@ pub async fn analyze_health_data(health_data : @core.Any) -> @core.Any {
       headers={ "Content-Type": "application/json" },
       body=request_body,
     )
-    if not(response.ok) {
+    if !response.ok {
       let error_text = response.text()
       @console.error(
         @core.any(
