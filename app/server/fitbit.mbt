@@ -207,11 +207,6 @@ extern "js" fn btoa(s : String) -> String =
   #| (s) => btoa(s)
 
 ///|
-/// Get today's date in ISO format (YYYY-MM-DD)
-pub extern "js" fn get_today_iso() -> String =
-  #| () => new Date().toISOString().split('T')[0]
-
-///|
 /// Parse activity data from Fitbit response
 pub fn parse_activity_data(data : @core.Any) -> @core.Any {
   if is_null(data) {

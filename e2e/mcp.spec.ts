@@ -10,8 +10,7 @@ dotenv.config();
  * These tests verify the MCP API endpoints that AI clients use.
  * All endpoints require Bearer token authentication via MCP_API_KEY.
  *
- * Using native fetch instead of Playwright's request fixture to avoid
- * httpCredentials (Basic Auth) being sent with Bearer token requests.
+ * Using native fetch keeps the MCP authentication contract explicit.
  */
 
 // Get API key from environment (required - no fallback for security)

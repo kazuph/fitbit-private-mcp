@@ -74,11 +74,6 @@ pub async fn mcp_get_spo2(days : Int) -> @core.Any {
 // =============================================================================
 
 ///|
-/// Get today's date as YYYY-MM-DD - requires FFI for Date API
-pub extern "js" fn get_today_date() -> String =
-  #| () => new Date().toISOString().split('T')[0]
-
-///|
 /// Parse days parameter from query string (default value if not present)
 pub fn parse_days_param(props : @router.PageProps, default_days : Int) -> Int {
   match props.get_query("days") {
@@ -124,7 +119,7 @@ async fn sync_today() -> (Bool, String?) {
   match token {
     None => (false, error)
     Some(access_token) => {
-      let date = get_today_date()
+      let date = get_today_jst()
       let (vo2max, spo2) = sync_health_data(access_token, date)
       update_daily_summary(date, vo2max, spo2)
       (true, None)
@@ -138,7 +133,7 @@ async fn internal_sync_handler(_props : @router.PageProps) -> Json {
   let (synced, error) = sync_today()
   let result = @core.new_object()
   result._set("success", @core.any(synced))
-  result._set("date", @core.any(get_today_date()))
+  result._set("date", @core.any(get_today_jst()))
   match error {
     Some(message) => result._set("error", @core.any(message))
     None => ()
@@ -394,7 +389,7 @@ pub async fn mcp_tools_handler(_props : @router.PageProps) -> Json {
 pub async fn mcp_health_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let summaries = mcp_get_health_summaries(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "summaries", summaries, days, end_date)
 }
 
@@ -403,7 +398,7 @@ pub async fn mcp_health_handler(props : @router.PageProps) -> Json {
 pub async fn mcp_activity_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let activities = mcp_get_activity(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "activities", activities, days, end_date)
 }
 
@@ -412,7 +407,7 @@ pub async fn mcp_activity_handler(props : @router.PageProps) -> Json {
 pub async fn mcp_sleep_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let sleep_data = mcp_get_sleep(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "sleep_data", sleep_data, days, end_date)
 }
 
@@ -421,7 +416,7 @@ pub async fn mcp_sleep_handler(props : @router.PageProps) -> Json {
 pub async fn mcp_heartrate_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7)
   let heart_rate_data = mcp_get_heartrate(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "heart_rate_data", heart_rate_data, days, end_date)
 }
 
@@ -430,7 +425,7 @@ pub async fn mcp_heartrate_handler(props : @router.PageProps) -> Json {
 pub async fn mcp_weight_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 30) // Default 30 days for weight
   let weight_data = mcp_get_weight(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "weight_data", weight_data, days, end_date)
 }
 
@@ -439,7 +434,7 @@ pub async fn mcp_weight_handler(props : @router.PageProps) -> Json {
 pub async fn mcp_vo2max_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 30) // Default 30 days for VO2max
   let vo2max_data = mcp_get_vo2max(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "vo2max_data", vo2max_data, days, end_date)
 }
 
@@ -448,7 +443,7 @@ pub async fn mcp_vo2max_handler(props : @router.PageProps) -> Json {
 pub async fn mcp_spo2_handler(props : @router.PageProps) -> Json {
   let days = parse_days_param(props, 7) // Default 7 days for SpO2
   let spo2_data = mcp_get_spo2(days)
-  let end_date = get_today_date()
+  let end_date = get_today_jst()
   build_mcp_response(true, "spo2_data", spo2_data, days, end_date)
 }
 

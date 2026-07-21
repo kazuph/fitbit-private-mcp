@@ -156,10 +156,24 @@ pub async fn db_get_daily_summaries(limit : Int) -> @core.Any {
 }
 
 ///|
+/// Get summaries ending on a specific date for personal trend analysis.
+pub async fn db_get_daily_summaries_until(
+  end_date : String,
+  limit : Int,
+) -> @core.Any {
+  let db = get_db()
+  d1_all(
+    db,
+    "SELECT * FROM daily_summary WHERE date <= ? ORDER BY date DESC LIMIT ?",
+    [@core.any(end_date), @core.any(limit)],
+  )
+}
+
+///|
 /// Get today's summary
 pub async fn db_get_today_summary() -> @core.Any {
   let db = get_db()
-  let today = get_today_str()
+  let today = get_today_jst()
   let row = d1_first(db, "SELECT * FROM daily_summary WHERE date = ?", [
     @core.any(today),
   ])
@@ -261,7 +275,7 @@ pub async fn db_get_token_status() -> @core.Any {
   let db = get_db()
   let row = d1_first(
     db,
-    "SELECT expires_at, updated_at FROM oauth_tokens WHERE user_id = 'default'",
+    "SELECT expires_at FROM oauth_tokens WHERE user_id = 'default'",
     [],
   )
   match row {
@@ -272,12 +286,20 @@ pub async fn db_get_token_status() -> @core.Any {
     }
     Some(token) => {
       let expires_at = get_str(token, "expires_at")
-      let updated_at = get_str(token, "updated_at")
       let is_expired = is_expired_timestamp(expires_at)
+      let last_summary = d1_first(
+        db,
+        "SELECT updated_at FROM daily_summary ORDER BY updated_at DESC LIMIT 1",
+        [],
+      )
+      let last_sync = match last_summary {
+        Some(summary) => get_str(summary, "updated_at")
+        None => ""
+      }
       let result = @core.new_object()
       result._set("connected", @core.any(true))
       result._set("expired", @core.any(is_expired))
-      result._set("lastSync", @core.any(updated_at))
+      result._set("lastSync", @core.any(last_sync))
       result
     }
   }
@@ -370,11 +392,6 @@ pub fn get_bool(obj : @core.Any, field : String) -> Bool {
 // =============================================================================
 
 ///|
-/// Get today's date string (YYYY-MM-DD) - requires FFI for Date API
-extern "js" fn get_today_str() -> String =
-  #| () => new Date().toISOString().split('T')[0]
-
-///|
 /// Get current timestamp (ISO format) - requires FFI for Date API
 pub extern "js" fn get_timestamp() -> String =
   #| () => new Date().toISOString()
@@ -394,22 +411,20 @@ pub extern "js" fn format_number(n : Int) -> String =
   #| (n) => n.toLocaleString()
 
 ///|
-/// Format date to readable string - requires FFI for Date formatting
+/// Format a persisted Fitbit date without applying a runtime timezone.
 pub extern "js" fn format_date(date_str : String) -> String =
   #| (dateStr) => {
   #|   if (!dateStr) return '';
-  #|   const date = new Date(dateStr);
-  #|   return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+  #|   const [, month, day] = dateStr.slice(0, 10).split('-');
+  #|   if (!month || !day) return '';
+  #|   return `${Number(month)}月${Number(day)}日`;
   #| }
 
 ///|
-/// Check if date is today - requires FFI for Date comparison
-pub extern "js" fn is_today(date_str : String) -> Bool =
-  #| (dateStr) => {
-  #|   if (!dateStr) return false;
-  #|   const today = new Date().toISOString().split('T')[0];
-  #|   return dateStr === today;
-  #| }
+/// Check whether a persisted Fitbit date is today in JST.
+pub fn is_today(date_str : String) -> Bool {
+  date_str != "" && date_str == get_today_jst()
+}
 
 ///|
 /// Truncate string to specified length

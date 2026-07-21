@@ -73,18 +73,18 @@ test.describe('OAuth Callback Handling', () => {
     // Try callback without code parameter
     const response = await page.goto('/auth/callback');
 
-    // Should return error or redirect with error (case insensitive check)
+    // Should explain the missing authorization code in Japanese.
     const content = await page.content();
-    expect(content.toLowerCase()).toContain('missing');
+    expect(content).toContain('認証コードがありません');
   });
 
   test('should reject callback with invalid state', async ({ page }) => {
     // Try callback with invalid state parameter
     const response = await page.goto('/auth/callback?code=fake_code&state=invalid_state');
 
-    // Should return error
+    // Should return a localized error page.
     const content = await page.content();
-    expect(content.toLowerCase()).toContain('error');
+    expect(content).toContain('エラー');
   });
 });
 

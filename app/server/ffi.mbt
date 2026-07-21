@@ -38,6 +38,40 @@ pub extern "js" fn get_current_time_jst() -> String =
   #| () => new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
 
 ///|
+/// Get today's calendar date in JST as YYYY-MM-DD.
+pub extern "js" fn get_today_jst() -> String =
+  #| () => {
+  #|   const parts = new Intl.DateTimeFormat('en-US', {
+  #|     timeZone: 'Asia/Tokyo',
+  #|     year: 'numeric',
+  #|     month: '2-digit',
+  #|     day: '2-digit',
+  #|   }).formatToParts(new Date());
+  #|   const value = (type) => parts.find((part) => part.type === type)?.value;
+  #|   return `${value('year')}-${value('month')}-${value('day')}`;
+  #| }
+
+///|
+/// Format a D1 UTC timestamp for display in JST.
+pub extern "js" fn format_timestamp_jst(timestamp : String) -> String =
+  #| (timestamp) => {
+  #|   if (!timestamp) return '';
+  #|   const iso = timestamp.includes('T') ? timestamp : `${timestamp.replace(' ', 'T')}Z`;
+  #|   const date = new Date(iso);
+  #|   if (Number.isNaN(date.getTime())) return '';
+  #|   const parts = new Intl.DateTimeFormat('en-US', {
+  #|     timeZone: 'Asia/Tokyo',
+  #|     month: 'numeric',
+  #|     day: 'numeric',
+  #|     hour: '2-digit',
+  #|     minute: '2-digit',
+  #|     hourCycle: 'h23',
+  #|   }).formatToParts(date);
+  #|   const value = (type) => parts.find((part) => part.type === type)?.value;
+  #|   return `${Number(value('month'))}月${Number(value('day'))}日 ${value('hour')}:${value('minute')} JST`;
+  #| }
+
+///|
 /// Get yesterday's date in JST (YYYY-MM-DD format)
 pub extern "js" fn get_yesterday_jst() -> String =
   #| () => {

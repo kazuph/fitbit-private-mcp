@@ -16,12 +16,6 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
-    // Basic Auth credentials from .env - send always to avoid timing issues
-    httpCredentials: {
-      username: process.env.BASIC_AUTH_USER || 'kazuph',
-      password: process.env.BASIC_AUTH_PASS || '',
-      send: 'always',
-    },
   },
   projects: [
     {

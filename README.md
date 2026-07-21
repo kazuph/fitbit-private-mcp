@@ -1,6 +1,6 @@
 # fitbit-private-mcp
 
-Fitbitの健康データをCloudflare D1へ同期し、Basic Authで保護したダッシュボードとAPI keyで保護したMCP endpointを提供する個人用Cloudflare Workerです。
+Fitbitの健康データをCloudflare D1へ同期し、Cloudflare Accessで保護した日本語の健康アクションダッシュボードと、API keyで保護したMCP endpointを提供する個人用Cloudflare Workerです。
 
 構成とbuild gateは [mizchi/cloudflare-starterkit-mbt](https://github.com/mizchi/cloudflare-starterkit-mbt) を基準にしています。MoonBitでアプリケーションロジックを実装し、TypeScriptのWorker entrypointをWranglerがbundleします。
 
@@ -43,11 +43,9 @@ pnpm test
 
 ## Cloudflare
 
-`wrangler.jsonc` のD1 bindingは `DB`、static assetsは `static/`、cronは6時間ごとの同期と22:00 UTCのdaily reportです。secret値は設定ファイルへ書かず、`wrangler secret put` で登録します。
+`wrangler.jsonc` のD1 bindingは `DB`、static assetsは `static/`、cronは6時間ごとの同期と22:00 UTCの毎朝の健康アクション通知です。ダッシュボードはCloudflare Accessで保護し、MCP endpointはAPI keyで保護します。secret値は設定ファイルへ書かず、`wrangler secret put` で登録します。
 
 ```sh
-pnpm exec wrangler secret put BASIC_AUTH_USER
-pnpm exec wrangler secret put BASIC_AUTH_PASS
 pnpm exec wrangler secret put FITBIT_CLIENT_ID
 pnpm exec wrangler secret put FITBIT_CLIENT_SECRET
 pnpm exec wrangler secret put FITBIT_REDIRECT_URI

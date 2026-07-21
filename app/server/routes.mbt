@@ -15,7 +15,7 @@ pub fn routes() -> Array[@router.SolRoutes] {
         @router.SolRoutes::Page(
           path="/",
           handler=@router.PageHandler(dashboard_page),
-          title="Health Dashboard",
+          title="健康アクション ダッシュボード",
           meta=[],
           revalidate=None,
           cache=None,
@@ -51,12 +51,14 @@ fn root_layout(
     @luna.fragment([
       div(class="dashboard-bg", []),
       nav(
-        attrs=[("aria-label", @luna.attr_static("Main navigation"))],
+        attrs=[
+          ("aria-label", @luna.attr_static("メインナビゲーション")),
+        ],
         class="main-nav",
         [
-          a(href="/", class="nav-brand", [text("Fitbit Health")]),
-          a(href="/", class="nav-link active", [text("Dashboard")]),
-          a(href="/auth/fitbit", class="nav-link", [text("Connect Fitbit")]),
+          a(href="/", class="nav-brand", [text("Fitbit 健康アクション")]),
+          a(href="/", class="nav-link active", [text("記録と提案")]),
+          a(href="/auth/fitbit", class="nav-link", [text("Fitbitを連携")]),
         ],
       ),
       main_el(class="dashboard-main", [inner]),
@@ -83,21 +85,22 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
       let weight = db_get_latest_weight()
       let vo2max = db_get_latest_vo2max()
       let spo2 = db_get_latest_spo2()
-      let summaries = db_get_daily_summaries(7)
+      let summaries = db_get_daily_summaries(health_analysis_history_limit())
+      let analysis = analyze_health_trends(summaries)
       let last_sync = get_str(token_status, "lastSync")
       let sync_text = if last_sync != "" {
-        format_date(last_sync)
+        format_timestamp_jst(last_sync)
       } else {
-        "Never"
+        "未同期"
       }
       @luna.fragment([
         header(class="dashboard-header", [
           div([
-            h1(class="dashboard-title", [text("Health Dashboard")]),
-            p(class="dashboard-subtitle", [text("Last synced: " + sync_text)]),
+            h1(class="dashboard-title", [text("今日の健康アクション")]),
+            p(class="dashboard-subtitle", [text("最終同期: " + sync_text)]),
           ]),
           div(class="header-actions", [
-            span(class="auth-status connected", [text("Connected")]),
+            span(class="auth-status connected", [text("Fitbit連携済み")]),
             form(
               http_method="POST",
               action="/api/sync",
@@ -106,12 +109,13 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
                 button(
                   attrs=[("type", @luna.attr_static("submit"))],
                   class="btn-sync",
-                  [text("Sync Now")],
+                  [text("最新データに同期")],
                 ),
               ],
             ),
           ]),
         ]),
+        render_health_action_section(analysis),
         section(class="metrics-grid", [
           render_steps_card(activity),
           render_calories_card(activity),
@@ -123,14 +127,51 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
         ]),
         section(class="summary-section", [
           header(class="section-header", [
-            h2(class="section-title", [text("Daily Summary")]),
-            span(class="section-subtitle", [text("Past 7 days")]),
+            h2(class="section-title", [text("最近の記録")]),
+            span(class="section-subtitle", [
+              text("自分の変化を振り返る"),
+            ]),
           ]),
           render_summary_list(summaries),
         ]),
       ])
     }
   })
+}
+
+///|
+fn render_health_action_section(
+  analysis : HealthAnalysis,
+) -> @luna.Node[Unit, String] {
+  let action_cards : Array[@luna.Node[Unit, String]] = []
+  for action in analysis.actions {
+    action_cards.push(
+      article(class="health-action-card", [
+        h3(class="health-action-title", [text(action.title)]),
+        p(class="health-action-detail", [text(action.detail)]),
+      ]),
+    )
+  }
+  section(
+    attrs=[("aria-label", @luna.attr_static("今日の健康アクション"))],
+    class="health-action-section",
+    [
+      div(class="health-action-intro", [
+        p(class="eyebrow", [text("あなたの記録から")]),
+        h2(class="health-action-heading", [
+          text("今日、健康のためにすること"),
+        ]),
+        p(class="health-action-context", [text(analysis.context)]),
+        p(class="health-action-headline", [text(analysis.headline)]),
+      ]),
+      div(class="health-action-grid", action_cards),
+      p(class="health-disclaimer", [
+        text(
+          "記録にもとづく振り返りです。症状や強い違和感がある場合は、医療者に相談してください。",
+        ),
+      ]),
+    ],
+  )
 }
 
 // =============================================================================
@@ -141,26 +182,17 @@ async fn dashboard_page(_props : @router.PageProps) -> @server_dom.ServerNode {
 fn render_steps_card(activity : @core.Any) -> @luna.Node[Unit, String] {
   let steps = get_int(activity, "steps")
   let distance = get_float(activity, "distance")
-  let goal = 10000
-  let progress = steps * 100 / goal
-  let capped_progress = if progress > 100 { 100 } else { progress }
   article(
     attrs=[
       (
         "aria-label",
-        @luna.attr_static(
-          "Steps: " +
-          format_number(steps) +
-          " of " +
-          format_number(goal) +
-          " goal",
-        ),
+        @luna.attr_static("歩数: " + format_number(steps) + "歩"),
       ),
     ],
     class="metric-card steps",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("Steps")]),
+        span(class="metric-label", [text("歩数")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -169,32 +201,11 @@ fn render_steps_card(activity : @core.Any) -> @luna.Node[Unit, String] {
       ]),
       div(class="metric-value", [
         span(class="metric-number", [text(format_number(steps))]),
-        span(class="metric-unit", [text("steps")]),
-      ]),
-      div(
-        attrs=[
-          ("role", @luna.attr_static("progressbar")),
-          ("aria-valuenow", @luna.attr_static(capped_progress.to_string())),
-          ("aria-valuemin", @luna.attr_static("0")),
-          ("aria-valuemax", @luna.attr_static("100")),
-          ("aria-label", @luna.attr_static("Steps progress")),
-        ],
-        class="progress-ring",
-        [
-          div(
-            class="progress-ring-fill",
-            style="width: " + capped_progress.to_string() + "%",
-            [],
-          ),
-        ],
-      ),
-      div(class="progress-label", [
-        span([text("Goal: " + format_number(goal))]),
-        span([text(capped_progress.to_string() + "%")]),
+        span(class="metric-unit", [text("歩")]),
       ]),
       div(class="metric-secondary", [
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Distance")]),
+          span(class="secondary-stat-label", [text("移動距離")]),
           span(class="secondary-stat-value", [
             text(format_float(distance, 2) + " km"),
           ]),
@@ -210,22 +221,21 @@ fn render_calories_card(activity : @core.Any) -> @luna.Node[Unit, String] {
   let fairly_active = get_int(activity, "fairly_active_minutes")
   let very_active = get_int(activity, "very_active_minutes")
   let active_mins = fairly_active + very_active
-  let goal = 2500
-  let progress = calories * 100 / goal
-  let capped_progress = if progress > 100 { 100 } else { progress }
   article(
     attrs=[
       (
         "aria-label",
         @luna.attr_static(
-          "Calories: " + format_number(calories) + " kcal burned",
+          "消費カロリー: " +
+          format_number(calories) +
+          "キロカロリー",
         ),
       ),
     ],
     class="metric-card calories",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("Calories")]),
+        span(class="metric-label", [text("消費カロリー")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -236,26 +246,9 @@ fn render_calories_card(activity : @core.Any) -> @luna.Node[Unit, String] {
         span(class="metric-number", [text(format_number(calories))]),
         span(class="metric-unit", [text("kcal")]),
       ]),
-      div(
-        attrs=[
-          ("role", @luna.attr_static("progressbar")),
-          ("aria-valuenow", @luna.attr_static(capped_progress.to_string())),
-          ("aria-valuemin", @luna.attr_static("0")),
-          ("aria-valuemax", @luna.attr_static("100")),
-          ("aria-label", @luna.attr_static("Calories progress")),
-        ],
-        class="progress-ring",
-        [
-          div(
-            class="progress-ring-fill",
-            style="width: " + capped_progress.to_string() + "%",
-            [],
-          ),
-        ],
-      ),
       div(class="metric-secondary", [
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Active")]),
+          span(class="secondary-stat-label", [text("活動分")]),
           span(class="secondary-stat-value", [
             text(active_mins.to_string() + " min"),
           ]),
@@ -281,7 +274,7 @@ fn render_sleep_card(sleep : @core.Any) -> @luna.Node[Unit, String] {
       (
         "aria-label",
         @luna.attr_static(
-          "Sleep: " +
+          "睡眠: " +
           hours.to_string() +
           " hours " +
           mins.to_string() +
@@ -292,7 +285,7 @@ fn render_sleep_card(sleep : @core.Any) -> @luna.Node[Unit, String] {
     class="metric-card sleep",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("Sleep")]),
+        span(class="metric-label", [text("睡眠")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -301,13 +294,13 @@ fn render_sleep_card(sleep : @core.Any) -> @luna.Node[Unit, String] {
       ]),
       div(class="metric-value", [
         span(class="metric-number", [
-          text(hours.to_string() + "h " + mins.to_string() + "m"),
+          text(hours.to_string() + "時間" + mins.to_string() + "分"),
         ]),
         span(class="metric-unit", [text("")]),
       ]),
       div(class="metric-secondary", [
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Efficiency")]),
+          span(class="secondary-stat-label", [text("睡眠効率")]),
           span(class="secondary-stat-value", [text(eff_text)]),
         ]),
       ]),
@@ -322,15 +315,12 @@ fn render_heartrate_card(heartrate : @core.Any) -> @luna.Node[Unit, String] {
   let hr_text = if resting > 0 { resting.to_string() } else { "--" }
   article(
     attrs=[
-      (
-        "aria-label",
-        @luna.attr_static("Heart Rate: " + hr_text + " bpm resting"),
-      ),
+      ("aria-label", @luna.attr_static("安静時心拍: " + hr_text + " bpm")),
     ],
     class="metric-card heartrate",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("Heart Rate")]),
+        span(class="metric-label", [text("安静時心拍")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -339,11 +329,11 @@ fn render_heartrate_card(heartrate : @core.Any) -> @luna.Node[Unit, String] {
       ]),
       div(class="metric-value", [
         span(class="metric-number", [text(hr_text)]),
-        span(class="metric-unit", [text("bpm resting")]),
+        span(class="metric-unit", [text("bpm")]),
       ]),
       div(class="metric-secondary", [
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Cardio")]),
+          span(class="secondary-stat-label", [text("有酸素運動")]),
           span(class="secondary-stat-value", [text(cardio.to_string() + " min")]),
         ]),
       ]),
@@ -362,11 +352,11 @@ fn render_weight_card(weight : @core.Any) -> @luna.Node[Unit, String] {
   }
   let bmi_text = if bmi > 0.0 { format_float(bmi, 1) } else { "--" }
   article(
-    attrs=[("aria-label", @luna.attr_static("Weight: " + weight_text + " kg"))],
+    attrs=[("aria-label", @luna.attr_static("体重: " + weight_text + " kg"))],
     class="metric-card weight",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("Weight")]),
+        span(class="metric-label", [text("体重")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -394,8 +384,6 @@ fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit, String] {
   let date = get_str(vo2max, "date")
   let date_text = if date != "" { format_date(date) } else { "--" }
 
-  // Fitness level based on VO2max range (simplified)
-  let fitness_level = if vo2max_val == "" { "No data" } else { "Active" }
   article(
     attrs=[
       ("aria-label", @luna.attr_static("VO2max: " + vo2max_text + " mL/kg/min")),
@@ -403,7 +391,7 @@ fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit, String] {
     class="metric-card vo2max",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("VO2max")]),
+        span(class="metric-label", [text("最大酸素摂取量")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -416,11 +404,7 @@ fn render_vo2max_card(vo2max : @core.Any) -> @luna.Node[Unit, String] {
       ]),
       div(class="metric-secondary", [
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Fitness")]),
-          span(class="secondary-stat-value", [text(fitness_level)]),
-        ]),
-        div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Updated")]),
+          span(class="secondary-stat-label", [text("記録日")]),
           span(class="secondary-stat-value", [text(date_text)]),
         ]),
       ]),
@@ -437,11 +421,13 @@ fn render_spo2_card(spo2 : @core.Any) -> @luna.Node[Unit, String] {
   let min_text = if min_val > 0.0 { format_float(min_val, 1) } else { "--" }
   let max_text = if max_val > 0.0 { format_float(max_val, 1) } else { "--" }
   article(
-    attrs=[("aria-label", @luna.attr_static("SpO2: " + avg_text + "% average"))],
+    attrs=[
+      ("aria-label", @luna.attr_static("血中酸素: 平均" + avg_text + "%")),
+    ],
     class="metric-card spo2",
     [
       div(class="metric-header", [
-        span(class="metric-label", [text("Blood Oxygen")]),
+        span(class="metric-label", [text("血中酸素")]),
         span(
           attrs=[("aria-hidden", @luna.attr_static("true"))],
           class="metric-icon",
@@ -450,15 +436,15 @@ fn render_spo2_card(spo2 : @core.Any) -> @luna.Node[Unit, String] {
       ]),
       div(class="metric-value", [
         span(class="metric-number", [text(avg_text)]),
-        span(class="metric-unit", [text("% avg")]),
+        span(class="metric-unit", [text("% 平均")]),
       ]),
       div(class="metric-secondary", [
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Min")]),
+          span(class="secondary-stat-label", [text("最小")]),
           span(class="secondary-stat-value", [text(min_text + "%")]),
         ]),
         div(class="secondary-stat", [
-          span(class="secondary-stat-label", [text("Max")]),
+          span(class="secondary-stat-label", [text("最大")]),
           span(class="secondary-stat-value", [text(max_text + "%")]),
         ]),
       ]),
@@ -475,7 +461,11 @@ fn render_summary_list(summaries : @core.Any) -> @luna.Node[Unit, String] {
   let len = array_len(summaries)
   if len == 0 {
     div(class="empty-state", [
-      p([text("No data yet. Sync your Fitbit to see daily summaries.")]),
+      p([
+        text(
+          "まだ記録がありません。Fitbitを同期すると、毎日の変化を振り返れます。",
+        ),
+      ]),
     ])
   } else {
     let items : Array[@luna.Node[Unit, String]] = []
@@ -500,21 +490,21 @@ fn render_summary_list(summaries : @core.Any) -> @luna.Node[Unit, String] {
           div(class="summary-date", [span([text(format_date(date))])]),
           div(class="summary-metric", [
             span(class="summary-metric-value", [text(format_number(steps))]),
-            span(class="summary-metric-label", [text("Steps")]),
+            span(class="summary-metric-label", [text("歩数")]),
           ]),
           div(class="summary-metric", [
             span(class="summary-metric-value", [text(format_number(calories))]),
-            span(class="summary-metric-label", [text("Cal")]),
+            span(class="summary-metric-label", [text("kcal")]),
           ]),
           div(class="summary-metric", [
             span(class="summary-metric-value", [
               text((sleep_mins / 60).to_string() + "h"),
             ]),
-            span(class="summary-metric-label", [text("Sleep")]),
+            span(class="summary-metric-label", [text("睡眠")]),
           ]),
           div(class="summary-metric", [
             span(class="summary-metric-value", [text(hr_str)]),
-            span(class="summary-metric-label", [text("HR")]),
+            span(class="summary-metric-label", [text("心拍")]),
           ]),
           div(class="summary-metric", [
             span(class="summary-metric-value", [text(w_str)]),
@@ -536,9 +526,13 @@ fn render_empty_state() -> @luna.Node[Unit, String] {
   @luna.fragment([
     header(class="dashboard-header", [
       div([
-        h1(class="dashboard-title", [text("Health Dashboard")]),
+        h1(class="dashboard-title", [
+          text("健康アクション ダッシュボード"),
+        ]),
         p(class="dashboard-subtitle", [
-          text("Connect your Fitbit to get started"),
+          text(
+            "Fitbitを連携すると、あなた自身の記録から次の行動を提案します。",
+          ),
         ]),
       ]),
     ]),
@@ -548,11 +542,13 @@ fn render_empty_state() -> @luna.Node[Unit, String] {
         class="empty-state-icon",
         [text("💪")],
       ),
-      h3(class="empty-state-title", [text("Connect Your Fitbit")]),
+      h3(class="empty-state-title", [text("Fitbitを連携する")]),
       p(class="empty-state-text", [
-        text("Link your Fitbit account to start tracking your health metrics."),
+        text(
+          "歩数・睡眠・心拍の記録をもとに、毎日の健康行動を振り返れます。",
+        ),
       ]),
-      a(href="/auth/fitbit", class="btn-connect", [text("Connect Fitbit")]),
+      a(href="/auth/fitbit", class="btn-connect", [text("Fitbitを連携")]),
     ]),
   ])
 }
@@ -564,17 +560,17 @@ fn render_empty_state() -> @luna.Node[Unit, String] {
 ///|
 const ROOT : String =
   #|<!DOCTYPE html>
-  #|<html lang="en">
+  #|<html lang="ja">
   #|<head>
   #|  <meta charset="UTF-8">
   #|  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  #|  <meta name="description" content="Track your Fitbit health metrics including steps, calories, sleep, heart rate, and weight. Personal health dashboard powered by Fitbit API.">
+  #|  <meta name="description" content="Fitbitの記録から、今日の健康行動につながる振り返りを届ける個人用ダッシュボード。">
   #|  <link rel="canonical" href="https://fitbit-private-mcp.kazu-san.workers.dev/">
   #|  <title>__LUNA_TITLE__</title>
   #|  <link rel="preconnect" href="https://fonts.googleapis.com">
   #|  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  #|  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  #|  <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+  #|  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  #|  <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
   #|  <style>
   #|    :root{--bg-deep:#0a0e1a;--bg-primary:#0f1629;--bg-elevated:#161d35;--bg-card:rgba(22,29,53,0.7);--bg-card-hover:rgba(30,40,70,0.8);--accent-teal:#00d4aa;--accent-teal-dim:#00a888;--accent-teal-glow:rgba(0,212,170,0.3);--accent-orange:#ff8c42;--accent-purple:#a855f7;--accent-red:#ff6b6b;--accent-blue:#4f8cff;--text-primary:#fff;--text-secondary:rgba(255,255,255,0.7);--text-muted:rgba(255,255,255,0.6);--text-dim:rgba(255,255,255,0.35);--font-display:'Outfit',system-ui,sans-serif;--font-body:'DM Sans',system-ui,sans-serif;--font-mono:'JetBrains Mono',monospace;--metric-size-xl:clamp(2.5rem,5vw,4rem);--space-xs:0.5rem;--space-sm:0.75rem;--space-md:1rem;--space-lg:1.5rem;--space-xl:2rem;--space-2xl:3rem;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-full:9999px;--border-subtle:1px solid rgba(255,255,255,0.06);--shadow-card:0 4px 24px rgba(0,0,0,0.4);--shadow-elevated:0 8px 32px rgba(0,0,0,0.5);--shadow-glow-teal:0 0 30px var(--accent-teal-glow);--transition-fast:0.15s cubic-bezier(0.4,0,0.2,1);--transition-base:0.25s cubic-bezier(0.4,0,0.2,1)}
   #|    *,*::before,*::after{box-sizing:border-box}
@@ -651,6 +647,7 @@ const ROOT : String =
   #|    @media(max-width:768px){#__sol__{padding:var(--space-md)}.dashboard-header{flex-direction:column;align-items:flex-start;gap:var(--space-md)}.header-actions{width:100%;justify-content:space-between}.metrics-grid{grid-template-columns:1fr}.summary-item{grid-template-columns:1fr 1fr;gap:var(--space-sm)}.summary-item>:nth-child(n+4){display:none}}
   #|    @media(prefers-reduced-motion:reduce){.metric-card,.summary-item,.btn-sync,.btn-connect{animation:none;transition:none}.progress-ring-fill{transition:none}.auth-status.connected::before{animation:none}}
   #|  </style>
+  #|  <link href="/health-dashboard.css" rel="stylesheet">
   #|  __LUNA_HEAD__
   #|</head>
   #|<body>

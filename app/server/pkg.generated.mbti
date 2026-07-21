@@ -13,6 +13,8 @@ pub fn action_registry() -> @action.ActionRegistry
 
 pub async fn analyze_health_data(@mizchi/js/core.Any) -> @mizchi/js/core.Any
 
+pub fn analyze_health_trends(@mizchi/js/core.Any) -> HealthAnalysis
+
 pub fn array_get(@mizchi/js/core.Any, Int) -> @mizchi/js/core.Any
 
 pub fn array_len(@mizchi/js/core.Any) -> Int
@@ -38,6 +40,8 @@ pub async fn d1_run(@cloudflare.D1Database, String, Array[@mizchi/js/core.Any]) 
 pub fn d1_value(@mizchi/js/core.Any) -> @mizchi/js/core.Any
 
 pub async fn db_get_daily_summaries(Int) -> @mizchi/js/core.Any
+
+pub async fn db_get_daily_summaries_until(String, Int) -> @mizchi/js/core.Any
 
 pub async fn db_get_latest_activity() -> @mizchi/js/core.Any
 
@@ -77,11 +81,15 @@ pub fn format_date(String) -> String
 
 pub fn format_float(Double, Int) -> String
 
+pub fn format_health_analysis_for_slack(HealthAnalysis) -> String
+
 pub fn format_health_insights_for_slack(HealthInsights, String) -> String
 
 pub fn format_minutes_to_hours(Int) -> String
 
 pub fn format_number(Int) -> String
+
+pub fn format_timestamp_jst(String) -> String
 
 pub fn get_bool(@mizchi/js/core.Any, String) -> Bool
 
@@ -107,9 +115,7 @@ pub async fn get_sync_state(String) -> String?
 
 pub fn get_timestamp() -> String
 
-pub fn get_today_date() -> String
-
-pub fn get_today_iso() -> String
+pub fn get_today_jst() -> String
 
 pub fn get_token_expires_in_hours(String) -> Int
 
@@ -118,6 +124,8 @@ pub async fn get_valid_access_token(String) -> (String?, String?)
 pub fn get_yesterday_jst() -> String
 
 pub fn header(id? : String, class? : String, style? : String, attrs? : Array[(String, @mizchi/luna/core.Attr[Unit, String])], Array[@mizchi/luna/core.Node[Unit, String]]) -> @mizchi/luna/core.Node[Unit, String]
+
+pub fn health_analysis_history_limit() -> Int
 
 pub fn is_null(@mizchi/js/core.Any) -> Bool
 
@@ -220,6 +228,18 @@ pub async fn update_oauth_token(String, String, String, String) -> Unit
 // Errors
 
 // Types and methods
+pub struct HealthAction {
+  title : String
+  detail : String
+}
+
+pub struct HealthAnalysis {
+  date : String
+  context : String
+  headline : String
+  actions : Array[HealthAction]
+}
+
 pub struct HealthInsights {
   summary : String
   highlights : Array[String]

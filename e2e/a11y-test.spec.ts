@@ -7,8 +7,6 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 test.describe('A11y & UX Review', () => {
-  // Use httpCredentials from playwright.config.ts (configured via environment variables)
-
   test('Full accessibility scan with axe-core', async ({ page }) => {
     // Navigate to dashboard
     await page.goto('/');

@@ -2,16 +2,15 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Dashboard UI Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to dashboard (Basic Auth is handled by Playwright config)
     await page.goto('/');
   });
 
   test('should display dashboard header', async ({ page }) => {
     // Check that the page title is correct
-    await expect(page).toHaveTitle('Health Dashboard');
+    await expect(page).toHaveTitle('健康アクション ダッシュボード');
 
     // Check that the dashboard title is visible
-    await expect(page.locator('.dashboard-title')).toContainText('Health Dashboard');
+    await expect(page.locator('.dashboard-title')).toContainText(/健康アクション/);
   });
 
   test('should display navigation bar', async ({ page }) => {
@@ -19,11 +18,11 @@ test.describe('Dashboard UI Tests', () => {
     await expect(nav).toBeVisible();
 
     // Check nav brand
-    await expect(nav.locator('.nav-brand')).toContainText('Fitbit Health');
+    await expect(nav.locator('.nav-brand')).toContainText('Fitbit 健康アクション');
 
     // Check navigation links
-    await expect(nav.locator('.nav-link.active')).toContainText('Dashboard');
-    await expect(nav.locator('a[href="/auth/fitbit"]')).toContainText('Connect Fitbit');
+    await expect(nav.locator('.nav-link.active')).toContainText('記録と提案');
+    await expect(nav.locator('a[href="/auth/fitbit"]')).toContainText('Fitbitを連携');
   });
 
   test('should display empty state when not connected', async ({ page }) => {
@@ -35,7 +34,7 @@ test.describe('Dashboard UI Tests', () => {
 
     if (hasEmptyState) {
       await expect(emptyState).toBeVisible();
-      await expect(emptyState.locator('.empty-state-title')).toContainText('Connect Your Fitbit');
+      await expect(emptyState.locator('.empty-state-title')).toContainText('Fitbitを連携する');
       await expect(page.locator('.btn-connect')).toHaveAttribute('href', '/auth/fitbit');
     } else {
       // If connected, check for metrics grid
@@ -43,18 +42,9 @@ test.describe('Dashboard UI Tests', () => {
     }
   });
 
-  test('should protect dashboard with Basic Auth', async ({ browser }) => {
-    // Create a new context without credentials
-    const context = await browser.newContext({
-      httpCredentials: undefined,
-    });
-    const page = await context.newPage();
-
-    // Try to access without auth - should get 401
+  test('should render without Basic Auth', async ({ page }) => {
     const response = await page.goto('/');
-    expect(response?.status()).toBe(401);
-
-    await context.close();
+    expect(response?.status()).toBe(200);
   });
 
   test('should have responsive design elements', async ({ page }) => {
@@ -64,9 +54,9 @@ test.describe('Dashboard UI Tests', () => {
 
     // Check CSS custom properties are applied
     const rootStyles = await page.evaluate(() => {
-      return getComputedStyle(document.documentElement).getPropertyValue('--bg-deep');
+      return getComputedStyle(document.documentElement).getPropertyValue('--paper');
     });
-    expect(rootStyles.trim()).toBe('#0a0e1a');
+    expect(rootStyles.trim()).toBe('#f7f6f0');
   });
 
   test('should load Google Fonts', async ({ page }) => {
@@ -102,7 +92,7 @@ test.describe('Dashboard with Fitbit Connected', () => {
     // Check summary section
     const summarySection = page.locator('.summary-section');
     await expect(summarySection).toBeVisible();
-    await expect(summarySection.locator('.section-title')).toContainText('Daily Summary');
+    await expect(summarySection.locator('.section-title')).toContainText('最近の記録');
   });
 
   test.skip('should show sync button and status when connected', async ({ page }) => {

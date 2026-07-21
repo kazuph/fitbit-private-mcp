@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { basicAuth } from 'hono/basic-auth';
 import { timingSafeEqual } from 'hono/utils/buffer';
 import { cors } from 'hono/cors';
 import '../_build/js/release/build/__gen__/server/server.js';
@@ -40,15 +39,6 @@ app.use('/mcp/*', async (c, next) => {
   return next();
 });
 
-app.use('/*', async (c, next) => {
-  const p = c.req.path;
-  if (p.startsWith('/mcp') || p.startsWith('/auth/callback') || /\.(js|css|map)$/.test(p)) return next();
-  return basicAuth({
-    verifyUser: async (u, pw) => await secureCompare(u, c.env.BASIC_AUTH_USER) && await secureCompare(pw, c.env.BASIC_AUTH_PASS),
-    realm: 'Fitbit Health Dashboard',
-  })(c, next);
-});
-
 app.get('/auth/fitbit', (c) => {
   const u = new URL('https://www.fitbit.com/oauth2/authorize');
   u.searchParams.set('response_type', 'code'); u.searchParams.set('client_id', c.env.FITBIT_CLIENT_ID);
@@ -58,17 +48,17 @@ app.get('/auth/fitbit', (c) => {
 
 app.get('/auth/callback', async (c) => {
   const code = c.req.query('code'), error = c.req.query('error');
-  if (error) return c.html(`<h1>Failed</h1><p>${escapeHtml(error)}</p><a href="/">Back</a>`);
-  if (!code) return c.html(`<h1>Missing Code</h1><a href="/">Back</a>`);
+  if (error) return c.html(`<h1>連携に失敗しました</h1><p>${escapeHtml(error)}</p><a href="/">戻る</a>`);
+  if (!code) return c.html('<h1>認証コードがありません</h1><a href="/">戻る</a>');
   try {
     const ctx = getExecutionContext();
     const url = new URL('/__internal/oauth', c.req.url);
     url.searchParams.set('code', code);
     const result = await runMoonTask<OAuthResult>(url, c.env, ctx);
-    if (!result.success) throw new Error(result.error || 'Token exchange failed');
+    if (!result.success) throw new Error(result.error || 'トークン交換に失敗しました');
     return c.redirect('/?auth=success');
   } catch (err) {
-    return c.html(`<h1>Error</h1><p>${escapeHtml(err instanceof Error ? err.message : 'Unknown')}</p><a href="/">Back</a>`);
+    return c.html(`<h1>エラー</h1><p>${escapeHtml(err instanceof Error ? err.message : '不明なエラー')}</p><a href="/">戻る</a>`);
   }
 });
 
