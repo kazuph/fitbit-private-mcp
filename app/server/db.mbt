@@ -23,10 +23,10 @@ fn get_db() -> @cloudflare.D1Database {
 }
 
 ///|
-extern "js" fn d1_run_error_js(
+extern "js" fn d1_run_error_js_ffi(
   db : @core.Any,
   query : String,
-  params : Array[@core.Any],
+  params : FixedArray[@core.Any],
 ) -> @core.Promise[String] =
   #| async (db, query, params) => {
   #|   try {
@@ -38,6 +38,14 @@ extern "js" fn d1_run_error_js(
   #|     return error instanceof Error ? error.message : String(error);
   #|   }
   #| }
+
+fn d1_run_error_js(
+  db : @core.Any,
+  query : String,
+  params : Array[@core.Any],
+) -> @core.Promise[String] {
+  d1_run_error_js_ffi(db, query, FixedArray::from_array(params))
+}
 
 ///|
 pub async fn d1_run(
